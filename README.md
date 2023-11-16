@@ -1,5 +1,7 @@
 # kube-eip
 
+[中文](./docs/README_zh.md)
+
 **Kube-eip** is an elastic ip management add-on for kubevirt. The aim is to provide an access to kubevirt vmi through elastic ip.
 
 ## Architecture
@@ -12,4 +14,8 @@ Then for eip routes, we use bgp to declare that the nexthop to access vmi pod th
 
 ## Lifecycle of eip
 
-Kube-eip extends kubeernets by adding a eipBinding CRD. An eipBinding represent a eip binded to a vmi pod. And the operator will implement all of this above. And an eip can be create and bind or destoryed along with the eipBinding.
+Kube-eip extends kubeernets by adding a eipBinding CRD. An eipBinding represent a eip binded to a vmi pod. And an eip can be create and bind or destoryed along with the eipBinding. Also operator will watch EipBinding and kubevirt VirtualMachineInstance, and handle create update and delete event.
+
+## Modules
+
+There are two compose Operator and EipAgent. Operator watch the EipBinding and VirtualMachineInstance create, update and delete event. Then call EipAgent to build the rules on hyper, via grpc.
