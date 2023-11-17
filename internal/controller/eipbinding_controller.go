@@ -57,6 +57,7 @@ type EipBindingReconciler struct {
 func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
+	// Get EipBinding object
 	var eb extensionv1.EipBinding
 	if err := r.Get(ctx, req.NamespacedName, &eb); err != nil {
 		if errors.IsNotFound(err) {
@@ -64,15 +65,28 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 
 		log.Error(err, "unable to fetch EipBinding")
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		return ctrl.Result{}, err
 	}
 
-	// Handle delete
+	// Init vars
+	newHyper, newIPAddr, err := r.getVMIInfo(eb)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			log.Error(err, "unable to get vmi")
+			return ctrl.Result{}, err
+		}
+
+		log.Info("VMI offline")
+	}
+
+	// Add finalizer and handle delete
 	finalizerName := "extension.lucheng0127/finlizer"
+
 	if eb.ObjectMeta.DeletionTimestamp.IsZero() {
 		// EipBinding is not been deleted, register finalizer
 		if !controllerutil.ContainsFinalizer(&eb, finalizerName) {
 			controllerutil.AddFinalizer(&eb, finalizerName)
+
 			if err := r.Update(ctx, &eb); err != nil {
 				return ctrl.Result{}, err
 			}
@@ -86,6 +100,7 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 		controllerutil.RemoveFinalizer(&eb, finalizerName)
 		if err := r.Update(ctx, &eb); err != nil {
+			log.Error(err, "remove finalizer for EipBinding failed")
 			return ctrl.Result{}, err
 		}
 
@@ -93,105 +108,98 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, nil
 	}
 
-	// Work in process, skip
+	// Work in progress, skip
 	if eb.Spec.Phase == extensionv1.PhaseProcessing {
-		log.Info("EipBinding work in process")
+		log.Info("EipBinding work in progress, skip")
 		return ctrl.Result{}, nil
 	}
 
-	// Get vmi instance
-	var vmi vmv1.VirtualMachineInstance
-	r.Client.Get(context.TODO(), types.NamespacedName{
-		Name:      eb.Spec.VmiName,
-		Namespace: eb.Namespace,
-	}, &vmi)
+	// Do clean up for not ready vmi
+	if newIPAddr == "" || newHyper == "" {
+		log.Info("Do clean up for not ready vmi")
+		// TODO(shawnlu): do clean up
+	}
 
-	if vmi.Status.Phase != "Running" {
-		log.Info("VMI not running")
+	// Check vmi hyper and ip changed
+	if eb.Spec.CurrentHyper == newHyper && eb.Spec.CurrentIPAddr == newIPAddr {
+		log.Info("VMI info not changed, skip")
 		return ctrl.Result{}, nil
 	}
 
-	if len(vmi.Status.Interfaces) == 0 {
-		log.Error(errors.NewBadRequest("vmi withou avaliable interface"), "eip bind failed")
-		eb.Spec.Phase = extensionv1.PhaseError
-		if err := r.Client.Update(ctx, &eb); err != nil {
-			log.Error(err, "update EipBinding failed")
-			return ctrl.Result{}, err
-		}
-		return ctrl.Result{}, nil
-	}
-
-	currentIPAddr := vmi.Status.Interfaces[0].IP
-	currentHyper, err := r.getHyperIPAddr(vmi.Status.NodeName)
-	if err != nil {
-		log.Error(errors.NewInternalError(err), "get hyper IP address failed")
-	}
-
-	// Check vmi ip and hyper changed
-	if eb.Spec.CurrentHyper == currentHyper && eb.Spec.CurrentIPAddr == currentIPAddr {
-		// Nothing changed, skip
-		return ctrl.Result{}, nil
-	}
-
-	// Handle create and update
-	if eb.Spec.LastIPAddr == "" && eb.Spec.LastHyper == "" {
-		// No old rule need be cleaned
-		log.Info("Try to bind to vmi")
-		eb.Spec.CurrentIPAddr = currentIPAddr
-		eb.Spec.CurrentHyper = currentHyper
-		eb.Spec.Phase = extensionv1.PhaseProcessing
-		if err := r.Client.Update(ctx, &eb); err != nil {
-			log.Error(err, "update EipBinding failed")
-			return ctrl.Result{}, err
-		}
-		// TODO(shawnlu): apply eip rules
-		eb.Spec.Phase = extensionv1.PhaseReady
-		if err := r.Client.Update(ctx, &eb); err != nil {
-			log.Error(err, "update EipBinding failed")
-			return ctrl.Result{}, err
-		}
-		log.Info("Eip bind succeed")
-		return ctrl.Result{}, nil
-	}
-
+	// Handle vmi info change
 	staleHyper := eb.Spec.LastHyper
 	staleIPAddr := eb.Spec.LastIPAddr
 	eb.Spec.LastHyper = eb.Spec.CurrentHyper
 	eb.Spec.LastIPAddr = eb.Spec.CurrentIPAddr
-	eb.Spec.CurrentHyper = currentHyper
-	eb.Spec.CurrentIPAddr = currentIPAddr
+	eb.Spec.CurrentHyper = newHyper
+	eb.Spec.CurrentIPAddr = newIPAddr
+
+	// Apply eip bind and unbind
 	eb.Spec.Phase = extensionv1.PhaseProcessing
 	if err := r.Client.Update(ctx, &eb); err != nil {
-		log.Error(err, "update EipBinding failed")
+		log.Error(err, "update EipBinding phase failed")
 		return ctrl.Result{}, err
 	}
 
-	// TODO(shawnlu)： Implement it
-	// Clean up first then bind
-	log.Info("Clean up last eip rules")
-	log.Info(staleHyper)
-	log.Info(staleIPAddr)
+	if staleHyper != "" && staleIPAddr != "" {
+		log.Info("Clean up staled hyper eip rules")
+		// TODO(shawnlu): clean up staled eip rules on old hyper
+	}
 
-	// Apply eip rules
+	log.Info("Apply eip rules on hyper")
+	// TODO(shawnlu): apply eip rules on new hyper
+
 	eb.Spec.Phase = extensionv1.PhaseReady
 	if err := r.Client.Update(ctx, &eb); err != nil {
-		log.Error(err, "update EipBinding failed")
+		log.Error(err, "update EipBinding phase failed")
 		return ctrl.Result{}, err
 	}
-	log.Info("Eip bind succeed")
 
+	log.Info("Eip bind succeed")
 	return ctrl.Result{}, nil
 }
 
+// Get hyper ip address
 func (r *EipBindingReconciler) getHyperIPAddr(name string) (string, error) {
 	node := &corev1.Node{}
 	err := r.Client.Get(context.TODO(), client.ObjectKey{
 		Name: name,
 	}, node)
+
 	if err != nil {
 		return "", err
 	}
+
 	return node.Status.Addresses[0].Address, nil
+}
+
+// Get EipBinding vmi hyper ip address infos
+// When vmi not exist or not running return NotFound error
+// and ignore it.
+func (r *EipBindingReconciler) getVMIInfo(eb extensionv1.EipBinding) (string, string, error) {
+	var vmi vmv1.VirtualMachineInstance
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name:      eb.Spec.VmiName,
+		Namespace: eb.Namespace,
+	}, &vmi)
+	if err != nil {
+		return "", "", err
+	}
+
+	if vmi.Status.Phase != "Running" {
+		return "", "", errors.NewNotFound(vmv1.Resource("VirtualMachineInstance"), "VirtualMachineInstance")
+	}
+
+	hyperAddr, err := r.getHyperIPAddr(vmi.Status.NodeName)
+	if err != nil {
+		return "", "", err
+	}
+
+	if len(vmi.Status.Interfaces) == 0 {
+		return "", "", errors.NewBadRequest("vmi without interface, can't bind")
+	}
+
+	return hyperAddr, vmi.Status.Interfaces[0].IP, nil
 }
 
 func (r *EipBindingReconciler) findObjectsForVmi(ctx context.Context, vmi client.Object) []reconcile.Request {
