@@ -1,0 +1,27 @@
+# permissions for end users to view eipbindings.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: eipbinding-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: kube-eip
+    app.kubernetes.io/part-of: kube-eip
+    app.kubernetes.io/managed-by: kustomize
+  name: eipbinding-viewer-role
+rules:
+- apiGroups:
+  - extension.my.domain
+  resources:
+  - eipbindings
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - extension.my.domain
+  resources:
+  - eipbindings/status
+  verbs:
+  - get

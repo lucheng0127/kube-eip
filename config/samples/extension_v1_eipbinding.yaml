@@ -1,0 +1,12 @@
+apiVersion: extension.my.domain/v1
+kind: EipBinding
+metadata:
+  labels:
+    app.kubernetes.io/name: eipbinding
+    app.kubernetes.io/instance: eipbinding-sample
+    app.kubernetes.io/part-of: kube-eip
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kube-eip
+  name: eipbinding-sample
+spec:
+  # TODO(user): Add fields here
