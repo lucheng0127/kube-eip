@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - extension.my.domain
+  resources:
+  - eipbindings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - extension.my.domain
+  resources:
+  - eipbindings/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - extension.my.domain
+  resources:
+  - eipbindings/status
+  verbs:
+  - get
+  - patch
+  - update

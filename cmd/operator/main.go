@@ -34,7 +34,9 @@ import (
 
 	extensionv1 "github.com/lucheng0127/kube-eip/api/v1"
 	"github.com/lucheng0127/kube-eip/internal/controller"
+
 	//+kubebuilder:scaffold:imports
+	vmv1 "kubevirt.io/api/core/v1"
 )
 
 var (
@@ -46,6 +48,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(extensionv1.AddToScheme(scheme))
+	utilruntime.Must(vmv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

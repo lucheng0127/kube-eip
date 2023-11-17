@@ -23,19 +23,39 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+// +kubebuilder:validation:Enum=Ready;Processing
+type EipBindingPhase string
+
+const (
+	Ready      EipBindingPhase = "Ready"
+	Processing EipBindingPhase = "Processing"
+)
+
 // EipBindingSpec defines the desired state of EipBinding
 type EipBindingSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of EipBinding. Edit eipbinding_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Eip address binded to vmi
+	EipAddr string `json:"eipAddr"`
+
+	// Name of kubevirt vmi
+	VmiName string `json:"vmiName"`
 }
 
 // EipBindingStatus defines the observed state of EipBinding
 type EipBindingStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// Hyper the last vmi pod placed on
+	LastHyper string `json:"lastHyper"`
+
+	// The last vmi pod ip address
+	LastIPAddr string `json:"lastIPAddr"`
+
+	// Eip binding pahse
+	Phase EipBindingPhase `json:"phase"`
 }
 
 //+kubebuilder:object:root=true

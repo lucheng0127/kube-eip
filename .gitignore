@@ -1,2 +1,4 @@
 docs/architecture/architecture.drawio
 docs/architecture/watermark.py
+.vscode
+bin
