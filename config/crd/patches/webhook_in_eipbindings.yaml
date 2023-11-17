@@ -2,7 +2,7 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: eipbindings.extension.my.domain
+  name: eipbindings.extension.lucheng0127
 spec:
   conversion:
     strategy: Webhook

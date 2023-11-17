@@ -1,4 +1,4 @@
-apiVersion: extension.my.domain/v1
+apiVersion: extension.lucheng0127/v1
 kind: EipBinding
 metadata:
   labels:

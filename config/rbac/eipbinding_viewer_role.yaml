@@ -12,7 +12,7 @@ metadata:
   name: eipbinding-viewer-role
 rules:
 - apiGroups:
-  - extension.my.domain
+  - extension.lucheng0127
   resources:
   - eipbindings
   verbs:
@@ -20,7 +20,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - extension.my.domain
+  - extension.lucheng0127
   resources:
   - eipbindings/status
   verbs:

@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.13.0
-  name: eipbindings.extension.my.domain
+  name: eipbindings.extension.lucheng0127
 spec:
-  group: extension.my.domain
+  group: extension.lucheng0127
   names:
     kind: EipBinding
     listKind: EipBindingList
@@ -34,19 +34,15 @@ spec:
           spec:
             description: EipBindingSpec defines the desired state of EipBinding
             properties:
+              currentHyper:
+                description: Hyper vmi pod placed on
+                type: string
+              currentIPAddr:
+                description: The vmi pod ip address
+                type: string
               eipAddr:
                 description: Eip address binded to vmi
                 type: string
-              vmiName:
-                description: Name of kubevirt vmi
-                type: string
-            required:
-            - eipAddr
-            - vmiName
-            type: object
-          status:
-            description: EipBindingStatus defines the observed state of EipBinding
-            properties:
               lastHyper:
                 description: Hyper the last vmi pod placed on
                 type: string
@@ -58,11 +54,17 @@ spec:
                 enum:
                 - Ready
                 - Processing
+                - Error
+                type: string
+              vmiName:
+                description: Name of kubevirt vmi
                 type: string
             required:
-            - lastHyper
-            - lastIPAddr
-            - phase
+            - eipAddr
+            - vmiName
+            type: object
+          status:
+            description: EipBindingStatus defines the observed state of EipBinding
             type: object
         type: object
     served: true

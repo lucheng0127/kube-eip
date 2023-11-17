@@ -23,12 +23,13 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// +kubebuilder:validation:Enum=Ready;Processing
+// +kubebuilder:validation:Enum=Ready;Processing;Error
 type EipBindingPhase string
 
 const (
-	Ready      EipBindingPhase = "Ready"
-	Processing EipBindingPhase = "Processing"
+	PhaseReady      EipBindingPhase = "Ready"
+	PhaseProcessing EipBindingPhase = "Processing"
+	PhaseError      EipBindingPhase = "Error"
 )
 
 // EipBindingSpec defines the desired state of EipBinding
@@ -41,21 +42,27 @@ type EipBindingSpec struct {
 
 	// Name of kubevirt vmi
 	VmiName string `json:"vmiName"`
+
+	// Hyper vmi pod placed on
+	CurrentHyper string `json:"currentHyper,omitempty"`
+
+	// The vmi pod ip address
+	CurrentIPAddr string `json:"currentIPAddr,omitempty"`
+
+	// Hyper the last vmi pod placed on
+	LastHyper string `json:"lastHyper,omitempty"`
+
+	// The last vmi pod ip address
+	LastIPAddr string `json:"lastIPAddr,omitempty"`
+
+	// Eip binding pahse
+	Phase EipBindingPhase `json:"phase,omitempty"`
 }
 
 // EipBindingStatus defines the observed state of EipBinding
 type EipBindingStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-
-	// Hyper the last vmi pod placed on
-	LastHyper string `json:"lastHyper"`
-
-	// The last vmi pod ip address
-	LastIPAddr string `json:"lastIPAddr"`
-
-	// Eip binding pahse
-	Phase EipBindingPhase `json:"phase"`
 }
 
 //+kubebuilder:object:root=true

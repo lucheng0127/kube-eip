@@ -2,7 +2,7 @@
 # This file is used to track the info used to scaffold your project
 # and allow the plugins properly work.
 # More info: https://book.kubebuilder.io/reference/project-config.html
-domain: my.domain
+domain: lucheng0127
 layout:
 - go.kubebuilder.io/v4
 projectName: kube-eip
@@ -12,7 +12,7 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: my.domain
+  domain: lucheng0127
   group: extension
   kind: EipBinding
   path: github.com/lucheng0127/kube-eip/api/v1
