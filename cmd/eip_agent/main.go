@@ -23,6 +23,20 @@ func main() {
 				Value: "info",
 				Usage: "log level, default info",
 			},
+			&cli.StringSliceFlag{
+				Name:  "internal-net",
+				Usage: "networks that exclude from nat",
+			},
+			&cli.StringFlag{
+				Name:     "gateway-ip",
+				Usage:    "externel network gateway ip address",
+				Required: true,
+			},
+			&cli.StringFlag{
+				Name:     "gateway-dev",
+				Usage:    "externel network gateway device",
+				Required: true,
+			},
 		},
 	}
 
