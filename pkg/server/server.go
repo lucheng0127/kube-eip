@@ -2,14 +2,17 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
 	"os/signal"
 
+	"github.com/lucheng0127/kube-eip/pkg/manager"
 	"github.com/lucheng0127/kube-eip/pkg/protoc/binding"
 	"github.com/lucheng0127/kube-eip/pkg/utils/ctx"
 	logger "github.com/lucheng0127/kube-eip/pkg/utils/log"
+	"github.com/lucheng0127/kube-eip/pkg/utils/validator"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
@@ -19,6 +22,10 @@ type EipAgent struct {
 	Port   int
 	RpcSvc binding.EipAgentServer
 	Ctx    context.Context
+
+	InternalAddrs []string
+	ExternalGWIP  net.IP
+	ExternalGWDev string
 }
 
 func setLogger(level string) {
@@ -62,6 +69,7 @@ func (agent *EipAgent) Stop() {
 
 func NewAgent(opts ...AgentOption) *EipAgent {
 	agent := new(EipAgent)
+	agent.InternalAddrs = make([]string, 2)
 	agent.Ctx = ctx.NewTraceContext()
 
 	for _, opt := range opts {
@@ -73,10 +81,23 @@ func NewAgent(opts ...AgentOption) *EipAgent {
 
 func Launch(cCtx *cli.Context) error {
 	// Init agent
+	gwIP := validator.ValidateIPv4(cCtx.String("gateway-ip"))
+	if gwIP == nil {
+		return errors.New("invalidate gateway ip address")
+	}
+
 	setLogger(cCtx.String("log-level"))
 	agent := NewAgent(
-		SetListenPort(cCtx.Int("port")),
+		setListenPort(cCtx.Int("port")),
+		setInternalAddrs(cCtx.StringSlice("internal-net")),
+		setExternalGWIP(gwIP),
+		setExternalGEDev(cCtx.String("gateway-dev")),
 	)
+
+	// Setup manager
+	if err := manager.RegisterManagers(agent.InternalAddrs...); err != nil {
+		return err
+	}
 
 	// Signal handle
 	sigChan := make(chan os.Signal, 1024)
