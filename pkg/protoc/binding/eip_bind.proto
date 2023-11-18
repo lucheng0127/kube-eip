@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option go_package = "github.com/lucheng0127/kube-eip/pkg/protoc/binding";
+
+package protoc;
+
+message EipOpReq {
+    string action = 1;
+    string eipAddr = 2;
+    string vmiAddr = 3;
+}
+
+message EipOpRsp {
+    string result = 1;
+    int32 errPhase = 2;
+}
+
+service EipAgent {
+    rpc EipOperate(EipOpReq) returns(EipOpRsp);
+}
