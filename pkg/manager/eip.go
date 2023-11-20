@@ -1,7 +1,11 @@
 package manager
 
 import (
+	"fmt"
 	"net"
+
+	ectx "github.com/lucheng0127/kube-eip/pkg/utils/ctx"
+	logger "github.com/lucheng0127/kube-eip/pkg/utils/log"
 )
 
 type EipManager interface {
@@ -44,9 +48,22 @@ func (mgr *EipMgr) deleteBgpRoute() error {
 }
 
 func (mgr *EipMgr) BindEip() (int, error) {
-	// TODO(shawnlu): Due to operator will update CRD phase,
-	// so maybe bind or unbind will be call multi times.
-	// if exist no need bind multi times.
+	ctx := ectx.NewTraceContext()
+	md, err := parseMD(mgr.ExternalIP.String())
+	if err != nil {
+		logger.Error(ctx, err.Error())
+		return 0, err
+	}
+
+	if md == nil {
+		md = new(EipMetadata)
+	}
+
+	if md.Status == MD_STATUS_FINISHED {
+		logger.Debug(ctx, fmt.Sprintf("eip %s alrady applyed, do nothing", mgr.ExternalIP.String()))
+		return 0, nil
+	}
+
 	if err := mgr.addNat(); err != nil {
 		return 2, err
 	}
@@ -59,13 +76,31 @@ func (mgr *EipMgr) BindEip() (int, error) {
 		return 4, err
 	}
 
+	md.ExternalIP = mgr.ExternalIP.String()
+	md.InternalIP = mgr.InternalIP.String()
+	md.Status = MD_STATUS_FINISHED
+	md.Phase = 4
+
+	if err := md.dumpMD(); err != nil {
+		return 5, err
+	}
+
 	return 0, nil
 }
 
 func (mgr *EipMgr) UnbindEip() (int, error) {
-	// TODO(shawnlu): Due to operator will update CRD phase,
-	// so maybe bind or unbind will be call multi times.
-	// if exist no need bind multi times.
+	ctx := ectx.NewTraceContext()
+	md, err := parseMD(mgr.ExternalIP.String())
+	if err != nil {
+		logger.Error(ctx, err.Error())
+		return 0, err
+	}
+
+	if md == nil {
+		logger.Debug(ctx, fmt.Sprintf("eip %s alrady cleaned, do nothing", mgr.ExternalIP.String()))
+		return 0, nil
+	}
+
 	if err := mgr.deleteNat(); err != nil {
 		return 2, err
 	}
@@ -78,5 +113,9 @@ func (mgr *EipMgr) UnbindEip() (int, error) {
 		return 4, err
 	}
 
-	return 4, nil
+	if err := md.deleteMD(); err != nil {
+		return 5, err
+	}
+
+	return 0, nil
 }
