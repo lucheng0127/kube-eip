@@ -44,6 +44,9 @@ func (mgr *EipMgr) deleteBgpRoute() error {
 }
 
 func (mgr *EipMgr) BindEip() (int, error) {
+	// TODO(shawnlu): Due to operator will update CRD phase,
+	// so maybe bind or unbind will be call multi times.
+	// if exist no need bind multi times.
 	if err := mgr.addNat(); err != nil {
 		return 2, err
 	}
@@ -60,6 +63,9 @@ func (mgr *EipMgr) BindEip() (int, error) {
 }
 
 func (mgr *EipMgr) UnbindEip() (int, error) {
+	// TODO(shawnlu): Due to operator will update CRD phase,
+	// so maybe bind or unbind will be call multi times.
+	// if exist no need bind multi times.
 	if err := mgr.deleteNat(); err != nil {
 		return 2, err
 	}

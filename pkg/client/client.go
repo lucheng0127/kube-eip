@@ -13,24 +13,19 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func Launch(cCtx *cli.Context) error {
-	// Dial server
-	conn, err := grpc.Dial(cCtx.String("target"),
+func SendEipBindingRequest(target, action, eipAddr, vmiAddr string) (*binding.EipOpRsp, error) {
+	conn, err := grpc.Dial(target,
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	action := cCtx.String("action")
-	eipAddr := cCtx.String("eip-ip")
-	vmiAddr := cCtx.String("vmi-ip")
-
 	if !validator.ValidateAction(action) {
-		return errors.New("unsupported action")
+		return nil, errors.New("unsupported action")
 	}
 
 	if validator.ValidateIPv4(eipAddr) == nil || validator.ValidateIPv4(vmiAddr) == nil {
-		return errors.New("invalidate eip or vmi ipv4 address")
+		return nil, errors.New("invalidate eip or vmi ipv4 address")
 	}
 
 	// Build client
@@ -45,6 +40,20 @@ func Launch(cCtx *cli.Context) error {
 		VmiAddr: vmiAddr,
 	})
 
+	if err != nil {
+		return nil, err
+	}
+
+	return rsp, nil
+}
+
+func Launch(cCtx *cli.Context) error {
+	target := cCtx.String("target")
+	action := cCtx.String("action")
+	eipAddr := cCtx.String("eip-ip")
+	vmiAddr := cCtx.String("vmi-ip")
+
+	rsp, err := SendEipBindingRequest(target, action, eipAddr, vmiAddr)
 	if err != nil {
 		return err
 	}

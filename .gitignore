@@ -2,3 +2,6 @@ docs/architecture/architecture.drawio
 docs/architecture/watermark.py
 .vscode
 bin
+cmd/eip_agent/main
+cmd/eipctl/main
+cmd/operator/main

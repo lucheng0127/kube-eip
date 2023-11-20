@@ -8,6 +8,7 @@ require (
 	github.com/onsi/gomega v1.27.10
 	github.com/sirupsen/logrus v1.9.0
 	github.com/urfave/cli/v2 v2.25.7
+	golang.org/x/sync v0.2.0
 	golang.org/x/sys v0.13.0
 	google.golang.org/grpc v1.54.0
 	google.golang.org/protobuf v1.30.0

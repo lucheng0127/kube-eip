@@ -18,7 +18,9 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
+	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,6 +33,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	extensionv1 "github.com/lucheng0127/kube-eip/api/v1"
+	eipclient "github.com/lucheng0127/kube-eip/pkg/client"
+	"github.com/lucheng0127/kube-eip/pkg/server"
+	"github.com/lucheng0127/kube-eip/pkg/utils/errhandle"
 	corev1 "k8s.io/api/core/v1"
 	vmv1 "kubevirt.io/api/core/v1"
 )
@@ -94,8 +99,19 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	} else {
 		// EipBinding is being deleted
 		if controllerutil.ContainsFinalizer(&eb, finalizerName) {
-			// TODO(shawnlu): do clean up
-			log.Info("Clen up EipBinding")
+			// Do clean up
+			err := r.syncEipBinding(ctx, "unbind", newHyper, eb.Spec.EipAddr, newIPAddr)
+
+			if err != nil {
+				eb.Spec.Phase = extensionv1.PhaseError
+				if err := r.Client.Update(ctx, &eb); err != nil {
+					log.Error(err, "update EipBinding phase")
+				}
+
+				return ctrl.Result{}, err
+			}
+
+			log.Info("Clen up EipBinding rules succeed")
 		}
 
 		controllerutil.RemoveFinalizer(&eb, finalizerName)
@@ -109,7 +125,7 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Work in progress, skip
-	if eb.Spec.Phase == extensionv1.PhaseProcessing {
+	if eb.Spec.Phase == extensionv1.PhaseProcessing || eb.Spec.Phase == extensionv1.PhaseError {
 		log.Info("EipBinding work in progress, skip")
 		return ctrl.Result{}, nil
 	}
@@ -117,7 +133,26 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// Do clean up for not ready vmi
 	if newIPAddr == "" || newHyper == "" {
 		log.Info("Do clean up for not ready vmi")
-		// TODO(shawnlu): do clean up
+
+		err := r.syncEipBinding(ctx, "unbind", eb.Spec.CurrentHyper, eb.Spec.EipAddr, eb.Spec.CurrentIPAddr)
+		if err != nil {
+			eb.Spec.Phase = extensionv1.PhaseError
+			if err := r.Client.Update(ctx, &eb); err != nil {
+				log.Error(err, "update EipBinding phase")
+			}
+
+			return ctrl.Result{}, err
+		}
+
+		log.Info("sync eip rules succeed")
+
+		eb.Spec.Phase = extensionv1.PhaseReady
+		if err := r.Client.Update(ctx, &eb); err != nil {
+			log.Error(err, "update EipBinding phase")
+			return ctrl.Result{}, err
+		}
+
+		return ctrl.Result{}, nil
 	}
 
 	// Check vmi hyper and ip changed
@@ -137,26 +172,66 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// Apply eip bind and unbind
 	eb.Spec.Phase = extensionv1.PhaseProcessing
 	if err := r.Client.Update(ctx, &eb); err != nil {
-		log.Error(err, "update EipBinding phase failed")
+		log.Error(err, "update EipBinding phase")
 		return ctrl.Result{}, err
 	}
 
+	eg := new(errgroup.Group)
+
 	if staleHyper != "" && staleIPAddr != "" {
 		log.Info("Clean up staled hyper eip rules")
-		// TODO(shawnlu): clean up staled eip rules on old hyper
+		// Clean up staled eip rules on old hyper
+		eg.Go(func() error {
+			return r.syncEipBinding(ctx, "unbind", staleHyper, eb.Spec.EipAddr, staleIPAddr)
+		})
+
+		log.Info("Clean staled EipBinding succeed")
 	}
 
 	log.Info("Apply eip rules on hyper")
-	// TODO(shawnlu): apply eip rules on new hyper
+	// Apply eip rules on new hyper
+	eg.Go(func() error {
+		return r.syncEipBinding(ctx, "bind", newHyper, eb.Spec.EipAddr, newIPAddr)
+	})
+
+	if err := eg.Wait(); err != nil {
+		eb.Spec.Phase = extensionv1.PhaseError
+		if err := r.Client.Update(ctx, &eb); err != nil {
+			log.Error(err, "update EipBinding phase")
+			return ctrl.Result{}, err
+		}
+	}
+
+	log.Info("Apply EipBinding succeed")
 
 	eb.Spec.Phase = extensionv1.PhaseReady
 	if err := r.Client.Update(ctx, &eb); err != nil {
-		log.Error(err, "update EipBinding phase failed")
+		log.Error(err, "update EipBinding phase")
 		return ctrl.Result{}, err
 	}
 
 	log.Info("Eip bind succeed")
 	return ctrl.Result{}, nil
+}
+
+func (r *EipBindingReconciler) syncEipBinding(ctx context.Context, action, hyper, eipAddr, vmiAddr string) error {
+	log := log.FromContext(ctx)
+
+	target := fmt.Sprintf("%s:6127", hyper)
+	rsp, err := eipclient.SendEipBindingRequest(target, action, eipAddr, vmiAddr)
+
+	if err != nil {
+		log.Error(err, "send eip rpc request")
+		return err
+	}
+
+	if rsp.Result != server.RspSucceed {
+		opErr := errhandle.NewEipOperateError(fmt.Sprintf("%s eip %s vmi ip %s failed, error phase %d", action, eipAddr, vmiAddr, rsp.ErrPhase))
+		log.Error(opErr, "delete EipBinding")
+		return opErr
+	}
+
+	return nil
 }
 
 // Get hyper ip address
