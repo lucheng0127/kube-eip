@@ -25,8 +25,6 @@ func RegisterIPSetMgr() error {
 }
 
 func (ipset *CmdIpsetMgr) AddSetAndEntries(name string, entries ...string) error {
-	// TODO(shawnlu): diff if not exist create
-
 	if err := ipset.mgr.Create(name, "hash:net"); err != nil {
 		return err
 	}

@@ -31,7 +31,7 @@ func (mgr *EipMgr) deleteNat() error {
 	return nil
 }
 
-func (mgr *EipMgr) addRoutesAndTable() error {
+func (mgr *EipMgr) addPolicyRoute() error {
 	return nil
 }
 
@@ -68,7 +68,7 @@ func (mgr *EipMgr) BindEip() (int, error) {
 		return 2, err
 	}
 
-	if err := mgr.addRoutesAndTable(); err != nil {
+	if err := mgr.addPolicyRoute(); err != nil {
 		return 3, err
 	}
 

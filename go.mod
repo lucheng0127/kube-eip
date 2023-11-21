@@ -8,6 +8,7 @@ require (
 	github.com/onsi/gomega v1.27.10
 	github.com/sirupsen/logrus v1.9.0
 	github.com/urfave/cli/v2 v2.25.7
+	github.com/vishvananda/netlink v1.1.0
 	golang.org/x/sync v0.2.0
 	golang.org/x/sys v0.13.0
 	google.golang.org/grpc v1.54.0
@@ -59,6 +60,7 @@ require (
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.25.0 // indirect

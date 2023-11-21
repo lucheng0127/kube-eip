@@ -85,17 +85,18 @@ func Launch(cCtx *cli.Context) error {
 	if gwIP == nil {
 		return errors.New("invalidate gateway ip address")
 	}
+	gwDev := cCtx.String("gateway-dev")
 
 	setLogger(cCtx.String("log-level"))
 	agent := NewAgent(
 		setListenPort(cCtx.Int("port")),
 		setInternalAddrs(cCtx.StringSlice("internal-net")),
 		setExternalGWIP(gwIP),
-		setExternalGEDev(cCtx.String("gateway-dev")),
+		setExternalGEDev(gwDev),
 	)
 
 	// Setup manager
-	if err := manager.RegisterManagers(agent.InternalAddrs...); err != nil {
+	if err := manager.RegisterManagers(gwIP, gwDev, agent.InternalAddrs...); err != nil {
 		return err
 	}
 

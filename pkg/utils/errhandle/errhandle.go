@@ -16,3 +16,7 @@ func IsNoSuchFileError(err error) bool {
 func NewEipOperateError(msg string) error {
 	return errors.New(msg)
 }
+
+func IsRouteExistError(err error) bool {
+	return strings.Contains(err.Error(), "file exists")
+}

@@ -5,3 +5,4 @@ bin
 cmd/eip_agent/main
 cmd/eipctl/main
 cmd/operator/main
+cmd/test
