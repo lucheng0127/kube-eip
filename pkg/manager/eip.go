@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"context"
 	"fmt"
 	"net"
 
@@ -14,36 +15,82 @@ type EipManager interface {
 }
 
 type EipMgr struct {
-	IPSetMgr *IpsetManager
-	NatMgr   *NatManager
-	RouteMgr *RouteManager
-	BgpMgr   *BgpManager
+	IPSetMgr IpsetManager
+	NatMgr   NatManager
+	RouteMgr RouteManager
+	BgpMgr   BgpManager
 
 	ExternalIP net.IP
 	InternalIP net.IP
 }
 
-func (mgr *EipMgr) addToSet() error {
+func (mgr *EipMgr) addToSet(ctx context.Context) error {
+	if err := mgr.IPSetMgr.AddIPToSet(SET_EIP, mgr.ExternalIP); err != nil {
+		logger.Error(ctx, fmt.Sprintf("add eip %s to ipset %s: %s", mgr.ExternalIP.String(), SET_EIP, err.Error()))
+		return err
+	}
+
+	if err := mgr.IPSetMgr.AddIPToSet(SET_VMI, mgr.InternalIP); err != nil {
+		logger.Error(ctx, fmt.Sprintf("add vmi ip %s to ipset %s: %s", mgr.InternalIP.String(), SET_VMI, err.Error()))
+		return err
+	}
 	return nil
 }
 
-func (mgr *EipMgr) deleteFromSet() error {
+func (mgr *EipMgr) deleteFromSet(ctx context.Context) error {
+	if err := mgr.IPSetMgr.DeleteFromSet(SET_EIP, mgr.ExternalIP); err != nil {
+		logger.Error(ctx, fmt.Sprintf("delete eip %s from ipset %s: %s", mgr.ExternalIP.String(), SET_EIP, err.Error()))
+		return err
+	}
+
+	if err := mgr.IPSetMgr.DeleteFromSet(SET_VMI, mgr.InternalIP); err != nil {
+		logger.Error(ctx, fmt.Sprintf("delete vmi ip %s from ipset %s: %s", mgr.InternalIP.String(), SET_VMI, err.Error()))
+		return err
+	}
 	return nil
 }
 
-func (mgr *EipMgr) addNat() error {
+func (mgr *EipMgr) addNat(ctx context.Context) error {
+	if err := mgr.NatMgr.AddPreroutingRule(mgr.ExternalIP, mgr.InternalIP); err != nil {
+		logger.Error(ctx, fmt.Sprintf("add dnat eip %s to vmi ip %s: %s", mgr.ExternalIP.String(), mgr.InternalIP.String(), err.Error()))
+		return err
+	}
+
+	if err := mgr.NatMgr.AddPostroutingRule(mgr.ExternalIP, mgr.InternalIP, SET_INTERNAL); err != nil {
+		logger.Error(ctx, fmt.Sprintf("add snat cmi ip %s to eip %s: %s", mgr.InternalIP.String(), mgr.ExternalIP.String(), err.Error()))
+		return err
+	}
 	return nil
 }
 
-func (mgr *EipMgr) deleteNat() error {
+func (mgr *EipMgr) deleteNat(ctx context.Context) error {
+	if err := mgr.NatMgr.DeletePreroutingRule(mgr.ExternalIP, mgr.InternalIP); err != nil {
+		logger.Error(ctx, fmt.Sprintf("delete dnat eip %s to vmi ip %s: %s", mgr.ExternalIP.String(), mgr.InternalIP.String(), err.Error()))
+		return err
+	}
+
+	if err := mgr.NatMgr.DeletePostroutingRule(mgr.ExternalIP, mgr.InternalIP, SET_INTERNAL); err != nil {
+		logger.Error(ctx, fmt.Sprintf("delete snat cmi ip %s to eip %s: %s", mgr.InternalIP.String(), mgr.ExternalIP.String(), err.Error()))
+		return err
+	}
 	return nil
 }
 
-func (mgr *EipMgr) addPolicyRoute() error {
+func (mgr *EipMgr) addPolicyRoute(ctx context.Context, vmiIP net.IP) error {
+	if err := mgr.RouteMgr.AddEipRule(vmiIP); err != nil {
+		logger.Error(ctx, fmt.Sprintf("add vmi %s eip rule: %s", vmiIP.String(), err.Error()))
+		return err
+	}
+
 	return nil
 }
 
-func (mgr *EipMgr) deleteRoutesAndTable() error {
+func (mgr *EipMgr) deleteRoutesAndTable(ctx context.Context, vmiIP net.IP) error {
+	if err := mgr.RouteMgr.DeleteEipRule(vmiIP); err != nil {
+		logger.Error(ctx, fmt.Sprintf("del vmi %s eip rule: %s", vmiIP.String(), err.Error()))
+		return err
+	}
+
 	return nil
 }
 
@@ -76,33 +123,34 @@ func (mgr *EipMgr) BindEip() (int, error) {
 	md.ExternalIP = mgr.ExternalIP.String()
 	md.InternalIP = mgr.InternalIP.String()
 	md.Status = MD_STATUS_FAILED
+	defer md.dumpMD()
 
 	// Add eip and vmi ip to ipset
-	if err := mgr.addToSet(); err != nil {
+	if err := mgr.addToSet(ctx); err != nil {
+		md.Phase = 0
 		return 1, err
 	}
 
 	// Add iptables rules
-	if err := mgr.addNat(); err != nil {
+	if err := mgr.addNat(ctx); err != nil {
+		md.Phase = 1
 		return 2, err
 	}
 
 	// Add policy route
-	if err := mgr.addPolicyRoute(); err != nil {
+	if err := mgr.addPolicyRoute(ctx, mgr.InternalIP); err != nil {
+		md.Phase = 2
 		return 3, err
 	}
 
 	// Add bgp route
 	if err := mgr.addBgpRoute(); err != nil {
+		md.Phase = 3
 		return 4, err
 	}
 
-	md.Status = MD_STATUS_FINISHED
 	md.Phase = 4
-
-	if err := md.dumpMD(); err != nil {
-		return 5, err
-	}
+	md.Status = MD_STATUS_FINISHED
 
 	return 0, nil
 }
@@ -120,23 +168,29 @@ func (mgr *EipMgr) UnbindEip() (int, error) {
 		return 0, nil
 	}
 
-	if err := mgr.deleteFromSet(); err != nil {
+	// Delete eip and vmi ip from ipset
+	if err := mgr.deleteFromSet(ctx); err != nil {
 		return 1, err
 	}
 
-	if err := mgr.deleteNat(); err != nil {
+	// Delete iptables rules
+	if err := mgr.deleteNat(ctx); err != nil {
 		return 2, err
 	}
 
-	if err := mgr.deleteRoutesAndTable(); err != nil {
+	// Delete policy route
+	if err := mgr.deleteRoutesAndTable(ctx, mgr.InternalIP); err != nil {
 		return 3, err
 	}
 
+	// Delete bgp route
 	if err := mgr.deleteBgpRoute(); err != nil {
 		return 4, err
 	}
 
+	// Delete metadata file when clean up finished
 	if err := md.deleteMD(); err != nil {
+		logger.Error(ctx, fmt.Sprintf("delete eip %s metadata file failed", mgr.ExternalIP.String()))
 		return 5, err
 	}
 
