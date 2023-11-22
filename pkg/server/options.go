@@ -27,3 +27,15 @@ func setInternalAddrs(addrs []string) AgentOption {
 		mgr.InternalAddrs = addrs
 	}
 }
+
+func setExternalBgpType(bgpType string) AgentOption {
+	return func(mgr *EipAgent) {
+		mgr.BgpType = bgpType
+	}
+}
+
+func setEipMaskLen(len int) AgentOption {
+	return func(mgr *EipAgent) {
+		mgr.EipMaskLen = len
+	}
+}

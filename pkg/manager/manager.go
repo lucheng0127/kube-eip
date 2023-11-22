@@ -9,7 +9,7 @@ import (
 	logger "github.com/lucheng0127/kube-eip/pkg/utils/log"
 )
 
-func RegisterManagers(gwIP net.IP, gwDev string, internal_net ...string) error {
+func RegisterManagers(gwIP net.IP, gwDev, bgpType string, eipMasklen int, internal_net ...string) error {
 	ctx := ctx.NewTraceContext()
 
 	// Registry ipset mgr
@@ -33,6 +33,8 @@ func RegisterManagers(gwIP net.IP, gwDev string, internal_net ...string) error {
 		}
 	}
 
+	logger.Info(ctx, "register ipset manager finished")
+
 	// Registry route mgr
 	if err := RegisterRouteMgr(gwIP, gwDev, internal_net); err != nil {
 		logger.Error(ctx, fmt.Sprintf("registry route mgr: %s", err.Error()))
@@ -45,6 +47,8 @@ func RegisterManagers(gwIP net.IP, gwDev string, internal_net ...string) error {
 		return err
 	}
 
+	logger.Info(ctx, "register route manager finished")
+
 	// Registry nat mgr
 	if err := RegisterIptablesMgr(); err != nil {
 		logger.Error(ctx, fmt.Sprintf("registry nat mgr: %s", err.Error()))
@@ -56,6 +60,15 @@ func RegisterManagers(gwIP net.IP, gwDev string, internal_net ...string) error {
 		logger.Error(ctx, fmt.Sprintf("setup iptables chains: %s", err.Error()))
 		return err
 	}
+
+	logger.Info(ctx, "register nat manager finished")
+
+	// Registry bgp mgr
+	if err := RegisterBgpManager(bgpType, eipMasklen); err != nil {
+		logger.Error(ctx, fmt.Sprintf("registry bgp mgr: %s", err.Error()))
+	}
+
+	logger.Info(ctx, "register bgp manager finished")
 
 	return nil
 }

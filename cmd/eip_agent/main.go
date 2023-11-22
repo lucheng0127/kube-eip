@@ -37,6 +37,16 @@ func main() {
 				Usage:    "externel network gateway device",
 				Required: true,
 			},
+			&cli.StringFlag{
+				Name:  "bgp-type",
+				Value: "none",
+				Usage: "bgp manager type, default is none, gobgp is avaliable",
+			},
+			&cli.Int64Flag{
+				Name:  "eip-marsklen",
+				Value: 24,
+				Usage: "eip network marsk length",
+			},
 		},
 	}
 

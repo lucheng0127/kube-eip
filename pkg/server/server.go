@@ -26,6 +26,8 @@ type EipAgent struct {
 	InternalAddrs []string
 	ExternalGWIP  net.IP
 	ExternalGWDev string
+	BgpType       string
+	EipMaskLen    int
 }
 
 func setLogger(level string) {
@@ -86,6 +88,8 @@ func Launch(cCtx *cli.Context) error {
 		return errors.New("invalidate gateway ip address")
 	}
 	gwDev := cCtx.String("gateway-dev")
+	bgpType := cCtx.String("bgp-type")
+	eipMasklen := int(cCtx.Int("eip-marsklen"))
 
 	setLogger(cCtx.String("log-level"))
 	agent := NewAgent(
@@ -93,10 +97,12 @@ func Launch(cCtx *cli.Context) error {
 		setInternalAddrs(cCtx.StringSlice("internal-net")),
 		setExternalGWIP(gwIP),
 		setExternalGEDev(gwDev),
+		setExternalBgpType(bgpType),
+		setEipMaskLen(eipMasklen),
 	)
 
 	// Setup manager
-	if err := manager.RegisterManagers(gwIP, gwDev, agent.InternalAddrs...); err != nil {
+	if err := manager.RegisterManagers(gwIP, gwDev, bgpType, eipMasklen, agent.InternalAddrs...); err != nil {
 		return err
 	}
 
