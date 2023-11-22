@@ -132,3 +132,5 @@ func (iptables *IptablesMgr) DeletePostroutingRule(eip, vmiIp net.IP, internalSe
 
 	return nil
 }
+
+//TODO(shawnlu): Add chain inject filter table FORWARD, provent traffice match CNI-ISOLATION-STAGE-1
