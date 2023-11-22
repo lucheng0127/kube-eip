@@ -42,25 +42,34 @@ func (s *GrpcServer) EipOperate(ctx context.Context, req *binding.EipOpReq) (*bi
 	mgr := new(manager.EipMgr)
 	mgr.ExternalIP = externalIP
 	mgr.InternalIP = internalIP
-	mgr.IPSetMgr = &manager.IpsetMgr
-	mgr.RouteMgr = &manager.RouteMgr
-	mgr.NatMgr = &manager.IptablesNatMgr
+	mgr.IPSetMgr = manager.IpsetMgr
+	mgr.RouteMgr = manager.RouteMgr
+	mgr.NatMgr = manager.IptablesNatMgr
+	mgr.BgpMgr = manager.BgpMgr
 
 	switch action {
 	case "bind":
 		errPhase, err := mgr.BindEip()
 		if err != nil {
+			logger.Error(ctx, fmt.Sprintf("bind eip %s to %s: %s", externalIP.String(), internalIP.String(), err.Error()))
+
 			rsp.Result = RspFailed
 			rsp.ErrPhase = int32(errPhase)
 			return rsp, nil
 		}
+
+		logger.Info(ctx, fmt.Sprintf("bind eip %s to %s succeed", externalIP.String(), internalIP.String()))
 	case "unbind":
 		errPhase, err := mgr.UnbindEip()
 		if err != nil {
+			logger.Error(ctx, fmt.Sprintf("unbind eip %s from %s: %s", externalIP.String(), internalIP.String(), err.Error()))
+
 			rsp.Result = RspFailed
 			rsp.ErrPhase = int32(errPhase)
 			return rsp, nil
 		}
+
+		logger.Info(ctx, fmt.Sprintf("unbind eip %s from %s succeed", externalIP.String(), internalIP.String()))
 	default:
 		logger.Error(tCtx, "invalidate eip operate")
 		rsp.Result = RspFailed

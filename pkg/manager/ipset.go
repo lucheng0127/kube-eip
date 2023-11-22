@@ -1,6 +1,8 @@
 package manager
 
 import (
+	"net"
+
 	ipset "github.com/gmccue/go-ipset"
 )
 
@@ -13,6 +15,8 @@ const (
 type IpsetManager interface {
 	AddSetAndEntries(string, string, ...string) error
 	SetupIpset(string, string, ...string) error
+	AddIPToSet(string, net.IP) error
+	DeleteFromSet(string, net.IP) error
 }
 
 type CmdIpsetMgr struct {
@@ -58,4 +62,12 @@ func (ipset *CmdIpsetMgr) AddSetAndEntries(name, setType string, entries ...stri
 
 func (ipset *CmdIpsetMgr) SetupIpset(name, setType string, entries ...string) error {
 	return ipset.AddSetAndEntries(name, setType, entries...)
+}
+
+func (ipset *CmdIpsetMgr) AddIPToSet(name string, ip net.IP) error {
+	return ipset.mgr.Add(name, ip.String())
+}
+
+func (ipset *CmdIpsetMgr) DeleteFromSet(name string, ip net.IP) error {
+	return ipset.mgr.Delete(name, ip.String())
 }
