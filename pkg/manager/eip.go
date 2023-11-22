@@ -14,13 +14,21 @@ type EipManager interface {
 }
 
 type EipMgr struct {
-	IPSetMgr IpsetManager
-	NatMgr   NatManager
-	RouteMgr RouteManager
-	BgpMgr   BgpManager
+	IPSetMgr *IpsetManager
+	NatMgr   *NatManager
+	RouteMgr *RouteManager
+	BgpMgr   *BgpManager
 
 	ExternalIP net.IP
 	InternalIP net.IP
+}
+
+func (mgr *EipMgr) addToSet() error {
+	return nil
+}
+
+func (mgr *EipMgr) deleteFromSet() error {
+	return nil
 }
 
 func (mgr *EipMgr) addNat() error {
@@ -48,6 +56,7 @@ func (mgr *EipMgr) deleteBgpRoute() error {
 }
 
 func (mgr *EipMgr) BindEip() (int, error) {
+	// Parse metadata
 	ctx := ectx.NewTraceContext()
 	md, err := parseMD(mgr.ExternalIP.String())
 	if err != nil {
@@ -64,20 +73,30 @@ func (mgr *EipMgr) BindEip() (int, error) {
 		return 0, nil
 	}
 
+	md.ExternalIP = mgr.ExternalIP.String()
+	md.InternalIP = mgr.InternalIP.String()
+	md.Status = MD_STATUS_FAILED
+
+	// Add eip and vmi ip to ipset
+	if err := mgr.addToSet(); err != nil {
+		return 1, err
+	}
+
+	// Add iptables rules
 	if err := mgr.addNat(); err != nil {
 		return 2, err
 	}
 
+	// Add policy route
 	if err := mgr.addPolicyRoute(); err != nil {
 		return 3, err
 	}
 
+	// Add bgp route
 	if err := mgr.addBgpRoute(); err != nil {
 		return 4, err
 	}
 
-	md.ExternalIP = mgr.ExternalIP.String()
-	md.InternalIP = mgr.InternalIP.String()
 	md.Status = MD_STATUS_FINISHED
 	md.Phase = 4
 
@@ -99,6 +118,10 @@ func (mgr *EipMgr) UnbindEip() (int, error) {
 	if md == nil {
 		logger.Debug(ctx, fmt.Sprintf("eip %s alrady cleaned, do nothing", mgr.ExternalIP.String()))
 		return 0, nil
+	}
+
+	if err := mgr.deleteFromSet(); err != nil {
+		return 1, err
 	}
 
 	if err := mgr.deleteNat(); err != nil {

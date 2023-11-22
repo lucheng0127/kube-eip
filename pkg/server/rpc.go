@@ -44,6 +44,7 @@ func (s *GrpcServer) EipOperate(ctx context.Context, req *binding.EipOpReq) (*bi
 	mgr.InternalIP = internalIP
 	mgr.IPSetMgr = &manager.IpsetMgr
 	mgr.RouteMgr = &manager.RouteMgr
+	mgr.NatMgr = &manager.IptablesNatMgr
 
 	switch action {
 	case "bind":

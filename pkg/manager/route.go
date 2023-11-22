@@ -18,14 +18,59 @@ const (
 	CNIDevName     string = "cni0"
 )
 
-type RouteManager interface{}
-
-var RouteMgr PolicyRouteMgr
+type RouteManager interface {
+	SetupRoute() error
+}
 
 type PolicyRouteMgr struct {
 	InternalAddrs []string
 	ExternalGWIP  net.IP
 	ExternalGWDev string
+}
+
+var RouteMgr RouteManager
+
+func newRouteManager(gwIP net.IP, gwDev string, internalAddrs []string) (RouteManager, error) {
+	routeMgr := new(PolicyRouteMgr)
+	routeMgr.InternalAddrs = internalAddrs
+	routeMgr.ExternalGWIP = gwIP
+	routeMgr.ExternalGWDev = gwDev
+
+	ctx := ctx.NewTraceContext()
+	fr, err := os.ReadFile(RouteTableFile)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if strings.Contains(string(fr), RouteTableName) {
+		logger.Debug(ctx, "eip route table exist, do nothing")
+		return routeMgr, nil
+	}
+
+	rw, err := os.OpenFile(RouteTableFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		logger.Error(ctx, err.Error())
+	}
+	defer rw.Close()
+
+	if _, err := rw.WriteString(fmt.Sprintf("%d    %s\n", RouteTableIdx, RouteTableName)); err != nil {
+		logger.Error(ctx, err.Error())
+	}
+
+	logger.Info(ctx, "create eip route table succeed")
+
+	return routeMgr, nil
+}
+
+func RegisterRouteMgr(gwIP net.IP, gwDev string, internalAddrs []string) error {
+	mgr, err := newRouteManager(gwIP, gwDev, internalAddrs)
+	if err != nil {
+		return err
+	}
+
+	RouteMgr = mgr
+	return nil
 }
 
 func (mgr *PolicyRouteMgr) defaultRoute() (*netlink.Route, error) {
@@ -102,38 +147,6 @@ func (mgr *PolicyRouteMgr) SetupRoute() error {
 			return err
 		}
 	}
-
-	return nil
-}
-
-func RegisterRouteMgr(gwIP net.IP, gwDev string, internalAddrs []string) error {
-	RouteMgr.InternalAddrs = internalAddrs
-	RouteMgr.ExternalGWIP = gwIP
-	RouteMgr.ExternalGWDev = gwDev
-
-	ctx := ctx.NewTraceContext()
-	fr, err := os.ReadFile(RouteTableFile)
-
-	if err != nil {
-		return err
-	}
-
-	if strings.Contains(string(fr), RouteTableName) {
-		logger.Debug(ctx, "eip route table exist, do nothing")
-		return nil
-	}
-
-	rw, err := os.OpenFile(RouteTableFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		logger.Error(ctx, err.Error())
-	}
-	defer rw.Close()
-
-	if _, err := rw.WriteString(fmt.Sprintf("%d    %s\n", RouteTableIdx, RouteTableName)); err != nil {
-		logger.Error(ctx, err.Error())
-	}
-
-	logger.Info(ctx, "create eip route table succeed")
 
 	return nil
 }

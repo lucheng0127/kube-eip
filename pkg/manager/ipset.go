@@ -4,28 +4,46 @@ import (
 	ipset "github.com/gmccue/go-ipset"
 )
 
+const (
+	SET_INTERNAL string = "k8s_internal_net"
+	SET_EIP      string = "kube-eip-eip"
+	SET_VMI      string = "kube-eip-vmi"
+)
+
 type IpsetManager interface {
-	AddSetAndEntries(string, ...string) error
+	AddSetAndEntries(string, string, ...string) error
+	SetupIpset(string, string, ...string) error
 }
 
 type CmdIpsetMgr struct {
 	mgr *ipset.IPSet
 }
 
-var IpsetMgr CmdIpsetMgr
+var IpsetMgr IpsetManager
+
+func newIpsetManager() (IpsetManager, error) {
+	ipsetMgr := new(CmdIpsetMgr)
+	mgr, err := ipset.New()
+	if err != nil {
+		return nil, err
+	}
+
+	ipsetMgr.mgr = mgr
+	return ipsetMgr, nil
+}
 
 func RegisterIPSetMgr() error {
-	mgr, err := ipset.New()
+	mgr, err := newIpsetManager()
 	if err != nil {
 		return err
 	}
 
-	IpsetMgr.mgr = mgr
+	IpsetMgr = mgr
 	return nil
 }
 
-func (ipset *CmdIpsetMgr) AddSetAndEntries(name string, entries ...string) error {
-	if err := ipset.mgr.Create(name, "hash:net"); err != nil {
+func (ipset *CmdIpsetMgr) AddSetAndEntries(name, setType string, entries ...string) error {
+	if err := ipset.mgr.Create(name, setType); err != nil {
 		return err
 	}
 
@@ -38,6 +56,6 @@ func (ipset *CmdIpsetMgr) AddSetAndEntries(name string, entries ...string) error
 	return nil
 }
 
-func SetupIpset(name string, entries ...string) error {
-	return IpsetMgr.AddSetAndEntries(name, entries...)
+func (ipset *CmdIpsetMgr) SetupIpset(name, setType string, entries ...string) error {
+	return ipset.AddSetAndEntries(name, setType, entries...)
 }
