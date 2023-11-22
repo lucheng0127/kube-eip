@@ -6,7 +6,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/lucheng0127/kube-eip/pkg/utils/cmd"
 	"github.com/lucheng0127/kube-eip/pkg/utils/ctx"
+	"github.com/lucheng0127/kube-eip/pkg/utils/errhandle"
 	logger "github.com/lucheng0127/kube-eip/pkg/utils/log"
 	"github.com/vishvananda/netlink"
 )
@@ -20,12 +22,15 @@ const (
 
 type RouteManager interface {
 	SetupRoute() error
+	AddEipRule(net.IP) error
+	DeleteEipRule(net.IP) error
 }
 
 type PolicyRouteMgr struct {
 	InternalAddrs []string
 	ExternalGWIP  net.IP
 	ExternalGWDev string
+	mgr           *cmd.CmdMgr
 }
 
 var RouteMgr RouteManager
@@ -35,6 +40,13 @@ func newRouteManager(gwIP net.IP, gwDev string, internalAddrs []string) (RouteMa
 	routeMgr.InternalAddrs = internalAddrs
 	routeMgr.ExternalGWIP = gwIP
 	routeMgr.ExternalGWDev = gwDev
+
+	mgr, err := cmd.NewCmdMgr("ip")
+	if err != nil {
+		return nil, err
+	}
+
+	routeMgr.mgr = mgr
 
 	ctx := ctx.NewTraceContext()
 	fr, err := os.ReadFile(RouteTableFile)
@@ -146,6 +158,26 @@ func (mgr *PolicyRouteMgr) SetupRoute() error {
 		if err := netlink.RouteAdd(iRoute); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (mgr *PolicyRouteMgr) AddEipRule(vmiIp net.IP) error {
+	subcmd := strings.Split(fmt.Sprintf("rule add from %s pref %d lookup %s", vmiIp.String(), RouteTableIdx, RouteTableName), " ")
+	_, err := mgr.mgr.Execute(subcmd...)
+	if err != nil && !errhandle.IsExistError(err) {
+		return err
+	}
+
+	return nil
+}
+
+func (mgr *PolicyRouteMgr) DeleteEipRule(vmiIp net.IP) error {
+	subcmd := strings.Split(fmt.Sprintf("rule del from %s pref %d lookup %s", vmiIp.String(), RouteTableIdx, RouteTableName), " ")
+	_, err := mgr.mgr.Execute(subcmd...)
+	if err != nil && !errhandle.IsExistError(err) {
+		return err
 	}
 
 	return nil

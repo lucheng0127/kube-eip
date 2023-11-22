@@ -76,11 +76,21 @@ func (mgr *EipMgr) deleteNat(ctx context.Context) error {
 	return nil
 }
 
-func (mgr *EipMgr) addPolicyRoute() error {
+func (mgr *EipMgr) addPolicyRoute(ctx context.Context, vmiIP net.IP) error {
+	if err := mgr.RouteMgr.AddEipRule(vmiIP); err != nil {
+		logger.Error(ctx, fmt.Sprintf("add vmi %s eip rule: %s", vmiIP.String(), err.Error()))
+		return err
+	}
+
 	return nil
 }
 
-func (mgr *EipMgr) deleteRoutesAndTable() error {
+func (mgr *EipMgr) deleteRoutesAndTable(ctx context.Context, vmiIP net.IP) error {
+	if err := mgr.RouteMgr.DeleteEipRule(vmiIP); err != nil {
+		logger.Error(ctx, fmt.Sprintf("del vmi %s eip rule: %s", vmiIP.String(), err.Error()))
+		return err
+	}
+
 	return nil
 }
 
@@ -128,7 +138,7 @@ func (mgr *EipMgr) BindEip() (int, error) {
 	}
 
 	// Add policy route
-	if err := mgr.addPolicyRoute(); err != nil {
+	if err := mgr.addPolicyRoute(ctx, mgr.InternalIP); err != nil {
 		md.Phase = 2
 		return 3, err
 	}
@@ -169,7 +179,7 @@ func (mgr *EipMgr) UnbindEip() (int, error) {
 	}
 
 	// Delete policy route
-	if err := mgr.deleteRoutesAndTable(); err != nil {
+	if err := mgr.deleteRoutesAndTable(ctx, mgr.InternalIP); err != nil {
 		return 3, err
 	}
 
