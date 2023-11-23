@@ -24,6 +24,8 @@ type RouteManager interface {
 	SetupRoute() error
 	AddEipRule(net.IP) error
 	DeleteEipRule(net.IP) error
+	AddEipToIface(net.IP) error
+	RemoveEipFromIface(net.IP) error
 }
 
 type PolicyRouteMgr struct {
@@ -31,7 +33,7 @@ type PolicyRouteMgr struct {
 	ExternalGWIP  net.IP
 	ExternalGWDev string
 	mgr           *cmd.CmdMgr
-	eipCidr       string
+	eipNet        *net.IPNet
 }
 
 var RouteMgr RouteManager
@@ -41,7 +43,12 @@ func newRouteManager(gwIP net.IP, gwDev string, eipCidr string, internalAddrs []
 	routeMgr.InternalAddrs = internalAddrs
 	routeMgr.ExternalGWIP = gwIP
 	routeMgr.ExternalGWDev = gwDev
-	routeMgr.eipCidr = eipCidr
+
+	_, eNet, err := net.ParseCIDR(eipCidr)
+	if err != nil {
+		return nil, fmt.Errorf("invalidate eip network cidr %s", err.Error())
+	}
+	routeMgr.eipNet = eNet
 
 	mgr, err := cmd.NewCmdMgr("ip")
 	if err != nil {
@@ -149,12 +156,7 @@ func (mgr *PolicyRouteMgr) eipRoute() (*netlink.Route, error) {
 		return nil, err
 	}
 
-	_, eipNet, err := net.ParseCIDR(mgr.eipCidr)
-	if err != nil {
-		return nil, err
-	}
-
-	route.Dst = eipNet
+	route.Dst = mgr.eipNet
 	route.LinkIndex = iface.Index
 	route.Table = RouteTableIdx
 	return route, nil
@@ -212,6 +214,46 @@ func (mgr *PolicyRouteMgr) DeleteEipRule(vmiIp net.IP) error {
 	subcmd := strings.Split(fmt.Sprintf("rule del from %s pref %d lookup %s", vmiIp.String(), RouteTableIdx, RouteTableName), " ")
 	_, err := mgr.mgr.Execute(subcmd...)
 	if err != nil && !errhandle.IsExistError(err) {
+		return err
+	}
+
+	return nil
+}
+
+func (mgr *PolicyRouteMgr) AddEipToIface(eip net.IP) error {
+	eipAddr := &netlink.Addr{
+		IPNet: &net.IPNet{
+			IP:   eip,
+			Mask: mgr.eipNet.Mask,
+		},
+	}
+
+	gwLink, err := netlink.LinkByName(mgr.ExternalGWDev)
+	if err != nil {
+		return err
+	}
+
+	if err = netlink.AddrAdd(gwLink, eipAddr); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (mgr *PolicyRouteMgr) RemoveEipFromIface(eip net.IP) error {
+	eipAddr := &netlink.Addr{
+		IPNet: &net.IPNet{
+			IP:   eip,
+			Mask: mgr.eipNet.Mask,
+		},
+	}
+
+	gwLink, err := netlink.LinkByName(mgr.ExternalGWDev)
+	if err != nil {
+		return err
+	}
+
+	if err = netlink.AddrDel(gwLink, eipAddr); err != nil {
 		return err
 	}
 

@@ -94,6 +94,24 @@ func (mgr *EipMgr) deleteRoutesAndTable(ctx context.Context, vmiIP net.IP) error
 	return nil
 }
 
+func (mgr *EipMgr) addEipToIface(ctx context.Context) error {
+	if err := mgr.RouteMgr.AddEipToIface(mgr.ExternalIP); err != nil {
+		logger.Error(ctx, fmt.Sprintf("add eip %s to hyper interface %s", mgr.ExternalIP.String(), err.Error()))
+		return err
+	}
+
+	return nil
+}
+
+func (mgr *EipMgr) remoteEipFromIface(ctx context.Context) error {
+	if err := mgr.RouteMgr.RemoveEipFromIface(mgr.ExternalIP); err != nil {
+		logger.Error(ctx, fmt.Sprintf("remove eip %s from hyper interface %s", mgr.ExternalIP.String(), err.Error()))
+		return err
+	}
+
+	return nil
+}
+
 func (mgr *EipMgr) addBgpRoute() error {
 	return nil
 }
@@ -143,10 +161,17 @@ func (mgr *EipMgr) BindEip() (int, error) {
 		return 3, err
 	}
 
-	// Add bgp route
-	if err := mgr.addBgpRoute(); err != nil {
+	// Add eip to interface
+	// If use arp snooping, no need do this
+	if err := mgr.addEipToIface(ctx); err != nil {
 		md.Phase = 3
 		return 4, err
+	}
+
+	// Add bgp route
+	if err := mgr.addBgpRoute(); err != nil {
+		md.Phase = 4
+		return 5, err
 	}
 
 	md.Phase = 4
@@ -183,15 +208,20 @@ func (mgr *EipMgr) UnbindEip() (int, error) {
 		return 3, err
 	}
 
+	// Remove eip from interface
+	if err := mgr.remoteEipFromIface(ctx); err != nil {
+		return 4, err
+	}
+
 	// Delete bgp route
 	if err := mgr.deleteBgpRoute(); err != nil {
-		return 4, err
+		return 5, err
 	}
 
 	// Delete metadata file when clean up finished
 	if err := md.deleteMD(); err != nil {
 		logger.Error(ctx, fmt.Sprintf("delete eip %s metadata file failed", mgr.ExternalIP.String()))
-		return 5, err
+		return 6, err
 	}
 
 	return 0, nil
