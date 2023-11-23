@@ -31,15 +31,17 @@ type PolicyRouteMgr struct {
 	ExternalGWIP  net.IP
 	ExternalGWDev string
 	mgr           *cmd.CmdMgr
+	eipCidr       string
 }
 
 var RouteMgr RouteManager
 
-func newRouteManager(gwIP net.IP, gwDev string, internalAddrs []string) (RouteManager, error) {
+func newRouteManager(gwIP net.IP, gwDev string, eipCidr string, internalAddrs []string) (RouteManager, error) {
 	routeMgr := new(PolicyRouteMgr)
 	routeMgr.InternalAddrs = internalAddrs
 	routeMgr.ExternalGWIP = gwIP
 	routeMgr.ExternalGWDev = gwDev
+	routeMgr.eipCidr = eipCidr
 
 	mgr, err := cmd.NewCmdMgr("ip")
 	if err != nil {
@@ -75,8 +77,8 @@ func newRouteManager(gwIP net.IP, gwDev string, internalAddrs []string) (RouteMa
 	return routeMgr, nil
 }
 
-func RegisterRouteMgr(gwIP net.IP, gwDev string, internalAddrs []string) error {
-	mgr, err := newRouteManager(gwIP, gwDev, internalAddrs)
+func RegisterRouteMgr(gwIP net.IP, gwDev string, eipCidr string, internalAddrs []string) error {
+	mgr, err := newRouteManager(gwIP, gwDev, eipCidr, internalAddrs)
 	if err != nil {
 		return err
 	}
@@ -139,13 +141,32 @@ func (mgr *PolicyRouteMgr) internalRoute(addr string) (*netlink.Route, error) {
 	return route, nil
 }
 
+func (mgr *PolicyRouteMgr) eipRoute() (*netlink.Route, error) {
+	route := new(netlink.Route)
+
+	iface, err := net.InterfaceByName(mgr.ExternalGWDev)
+	if err != nil {
+		return nil, err
+	}
+
+	_, eipNet, err := net.ParseCIDR(mgr.eipCidr)
+	if err != nil {
+		return nil, err
+	}
+
+	route.Dst = eipNet
+	route.LinkIndex = iface.Index
+	route.Table = RouteTableIdx
+	return route, nil
+}
+
 func (mgr *PolicyRouteMgr) SetupRoute() error {
 	dRoute, err := mgr.defaultRoute()
 	if err != nil {
 		return err
 	}
 
-	if err := netlink.RouteAdd(dRoute); err != nil {
+	if err := netlink.RouteAdd(dRoute); err != nil && !errhandle.IsRouteExistError(err) {
 		return err
 	}
 
@@ -155,15 +176,24 @@ func (mgr *PolicyRouteMgr) SetupRoute() error {
 			return err
 		}
 
-		if err := netlink.RouteAdd(iRoute); err != nil {
+		if err := netlink.RouteAdd(iRoute); err != nil && !errhandle.IsRouteExistError(err) {
 			return err
 		}
 	}
 
-	// TODO(shawnlu): Add eip network route to route table eip_route
-	// When icmp reply, there is ct record, after manage postrouting,
-	// if ct exist, will reply directly accroding to ct, will not match
-	// nat postrouting
+	// Add eip network route to route table eip_route
+	// For icmp reply traffice, there is a ct record, when the reply
+	// traffic go through mangle table in POSTROUTING, because of
+	// ct record, the traffic will do nat by ct record, so will
+	// not match snat rules in nat table.
+	eRoute, err := mgr.eipRoute()
+	if err != nil {
+		return nil
+	}
+
+	if err := netlink.RouteAdd(eRoute); err != nil && !errhandle.IsRouteExistError(err) {
+		return err
+	}
 
 	return nil
 }

@@ -42,10 +42,10 @@ func main() {
 				Value: "none",
 				Usage: "bgp manager type, default is none, gobgp is avaliable",
 			},
-			&cli.Int64Flag{
-				Name:  "eip-marsklen",
-				Value: 24,
-				Usage: "eip network marsk length",
+			&cli.StringFlag{
+				Name:     "eip-cidr",
+				Required: true,
+				Usage:    "eip network cidr",
 			},
 		},
 	}

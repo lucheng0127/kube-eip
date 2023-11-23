@@ -27,7 +27,7 @@ type EipAgent struct {
 	ExternalGWIP  net.IP
 	ExternalGWDev string
 	BgpType       string
-	EipMaskLen    int
+	EipCidr       string
 }
 
 func setLogger(level string) {
@@ -89,7 +89,7 @@ func Launch(cCtx *cli.Context) error {
 	}
 	gwDev := cCtx.String("gateway-dev")
 	bgpType := cCtx.String("bgp-type")
-	eipMasklen := int(cCtx.Int("eip-marsklen"))
+	eipCidr := cCtx.String("eip-cidr")
 
 	setLogger(cCtx.String("log-level"))
 	agent := NewAgent(
@@ -98,11 +98,11 @@ func Launch(cCtx *cli.Context) error {
 		setExternalGWIP(gwIP),
 		setExternalGEDev(gwDev),
 		setExternalBgpType(bgpType),
-		setEipMaskLen(eipMasklen),
+		setEipCidr(eipCidr),
 	)
 
 	// Setup manager
-	if err := manager.RegisterManagers(gwIP, gwDev, bgpType, eipMasklen, agent.InternalAddrs...); err != nil {
+	if err := manager.RegisterManagers(gwIP, gwDev, bgpType, eipCidr, agent.InternalAddrs...); err != nil {
 		return err
 	}
 

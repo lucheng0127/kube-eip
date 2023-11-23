@@ -34,8 +34,8 @@ func setExternalBgpType(bgpType string) AgentOption {
 	}
 }
 
-func setEipMaskLen(len int) AgentOption {
+func setEipCidr(cidr string) AgentOption {
 	return func(mgr *EipAgent) {
-		mgr.EipMaskLen = len
+		mgr.EipCidr = cidr
 	}
 }
