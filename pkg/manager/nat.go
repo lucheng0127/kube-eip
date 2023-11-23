@@ -90,6 +90,21 @@ func (iptables *IptablesMgr) SetupChains(eipset, vmiSet string) error {
 		}
 	}
 
+	// Inject filter table FORWARD, provent traffice match CNI-ISOLATION-STAGE-1
+	subcmd = strings.Split("-t filter -S FORWARD", " ")
+	currentForward, err := iptables.mgr.Execute(subcmd...)
+	if err != nil {
+		return err
+	}
+
+	if !strings.Contains(currentForward, vmiSet) {
+		subcmd = strings.Split(fmt.Sprintf("-t filter -I FORWARD 1 -m set --match-set %s src -j ACCEPT", vmiSet), " ")
+		_, err = iptables.mgr.Execute(subcmd...)
+		if err != nil && !errhandle.IsExistError(err) {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -132,5 +147,3 @@ func (iptables *IptablesMgr) DeletePostroutingRule(eip, vmiIp net.IP, internalSe
 
 	return nil
 }
-
-//TODO(shawnlu): Add chain inject filter table FORWARD, provent traffice match CNI-ISOLATION-STAGE-1
