@@ -160,6 +160,11 @@ func (mgr *PolicyRouteMgr) SetupRoute() error {
 		}
 	}
 
+	// TODO(shawnlu): Add eip network route to route table eip_route
+	// When icmp reply, there is ct record, after manage postrouting,
+	// if ct exist, will reply directly accroding to ct, will not match
+	// nat postrouting
+
 	return nil
 }
 
