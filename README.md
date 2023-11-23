@@ -19,3 +19,59 @@ Kube-eip extends kubeernets by adding a eipBinding CRD. An eipBinding represent 
 ## Modules
 
 There are two compose Operator and EipAgent. Operator watch the EipBinding and VirtualMachineInstance create, update and delete event. Then call EipAgent to build the rules on hyper, via grpc.
+
+## Usage
+
+**operator**
+
+```
+make manifest
+make install
+make docker-build-operator
+make run or make deploy
+```
+
+**eip_agent** run as daemonset
+
+```
+root@shawn-server:~/workspace/kube-eip/cmd/eip_agent# ./eip_agent -h
+NAME:
+   EipAgent - A new cli application
+
+USAGE:
+   EipAgent [global options] command [command options] [arguments...]
+
+COMMANDS:
+   help, h  Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --port value                                   agent port that rpc listen on (default: 6127)
+   --log-level value                              log level, default info (default: "info")
+   --internal-net value [ --internal-net value ]  networks that exclude from nat
+   --gateway-ip value                             externel network gateway ip address
+   --gateway-dev value                            externel network gateway device
+   --bgp-type value                               bgp manager type, default is none, gobgp is avaliable (default: "none")
+   --eip-cidr value                               eip network cidr
+   --help, -h                                     show help
+```
+
+**eipctl** a command line tool to bind and unbind eip to vmi
+
+```
+root@shawn-server:~# ./eipctl -h
+NAME:
+   eipctl - A new cli application
+
+USAGE:
+   eipctl [global options] command [command options] [arguments...]
+
+COMMANDS:
+   help, h  Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --target value  rpc server address, default 127.0.0.1:6127 (default: "127.0.0.1:6127")
+   --eip-ip value  eip ip address
+   --vmi-ip value  vmi ip address
+   --action value  action, bind or unbind
+   --help, -h      show help
+```

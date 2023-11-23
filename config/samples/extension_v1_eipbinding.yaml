@@ -9,5 +9,5 @@ metadata:
     app.kubernetes.io/created-by: kube-eip
   name: eipbinding-sample
 spec:
-  eipAddr: 182.168.18.13
+  eipAddr: 192.168.18.15
   vmiName: cirros
