@@ -60,6 +60,7 @@ func parseMD(eip string) (*EipMetadata, error) {
 	filepath := fmt.Sprintf("%s/eip-%s.metadata", MDDir, eip)
 
 	if _, err := os.Stat(filepath); errors.Is(err, os.ErrNotExist) {
+		// If metadata file not exist, do not return error
 		return nil, nil
 	}
 

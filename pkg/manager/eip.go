@@ -130,7 +130,12 @@ func (mgr *EipMgr) BindEip() (int, error) {
 	}
 
 	if md == nil {
+		// Init metadata
 		md = new(EipMetadata)
+		md.Phase = 0
+		md.Status = MD_STATUS_FAILED
+		md.ExternalIP = mgr.ExternalIP.String()
+		md.InternalIP = mgr.InternalIP.String()
 	}
 
 	if md.Status == MD_STATUS_FINISHED {
@@ -138,43 +143,46 @@ func (mgr *EipMgr) BindEip() (int, error) {
 		return 0, nil
 	}
 
-	md.ExternalIP = mgr.ExternalIP.String()
-	md.InternalIP = mgr.InternalIP.String()
-	md.Status = MD_STATUS_FAILED
 	defer md.dumpMD()
 
-	// Add eip and vmi ip to ipset
-	if err := mgr.addToSet(ctx); err != nil {
-		md.Phase = 0
-		return 1, err
+	// Do binding phase
+	for i := md.Phase; i < 5; i++ {
+		switch i + 1 {
+		case 1:
+			// Add eip and vmi ip to ipset
+			if err := mgr.addToSet(ctx); err != nil {
+				md.Phase = 0
+				return 1, err
+			}
+		case 2:
+			// Add iptables rules
+			if err := mgr.addNat(ctx); err != nil {
+				md.Phase = 1
+				return 2, err
+			}
+		case 3:
+			// Add policy route
+			if err := mgr.addPolicyRoute(ctx, mgr.InternalIP); err != nil {
+				md.Phase = 2
+				return 3, err
+			}
+		case 4:
+			// Add eip to interface
+			// If use arp snooping, no need do this
+			if err := mgr.addEipToIface(ctx); err != nil {
+				md.Phase = 3
+				return 4, err
+			}
+		case 5:
+			// Add bgp route
+			if err := mgr.addBgpRoute(); err != nil {
+				md.Phase = 4
+				return 5, err
+			}
+		}
 	}
 
-	// Add iptables rules
-	if err := mgr.addNat(ctx); err != nil {
-		md.Phase = 1
-		return 2, err
-	}
-
-	// Add policy route
-	if err := mgr.addPolicyRoute(ctx, mgr.InternalIP); err != nil {
-		md.Phase = 2
-		return 3, err
-	}
-
-	// Add eip to interface
-	// If use arp snooping, no need do this
-	if err := mgr.addEipToIface(ctx); err != nil {
-		md.Phase = 3
-		return 4, err
-	}
-
-	// Add bgp route
-	if err := mgr.addBgpRoute(); err != nil {
-		md.Phase = 4
-		return 5, err
-	}
-
-	md.Phase = 4
+	md.Phase = 5
 	md.Status = MD_STATUS_FINISHED
 
 	return 0, nil
@@ -184,7 +192,7 @@ func (mgr *EipMgr) UnbindEip() (int, error) {
 	ctx := ectx.NewTraceContext()
 	md, err := parseMD(mgr.ExternalIP.String())
 	if err != nil {
-		logger.Error(ctx, err.Error())
+		logger.Error(ctx, fmt.Sprintf("parse metadata file %s", err.Error()))
 		return 0, err
 	}
 
@@ -193,29 +201,35 @@ func (mgr *EipMgr) UnbindEip() (int, error) {
 		return 0, nil
 	}
 
-	// Delete eip and vmi ip from ipset
-	if err := mgr.deleteFromSet(ctx); err != nil {
-		return 1, err
-	}
-
-	// Delete iptables rules
-	if err := mgr.deleteNat(ctx); err != nil {
-		return 2, err
-	}
-
-	// Delete policy route
-	if err := mgr.deleteRoutesAndTable(ctx, mgr.InternalIP); err != nil {
-		return 3, err
-	}
-
-	// Remove eip from interface
-	if err := mgr.remoteEipFromIface(ctx); err != nil {
-		return 4, err
-	}
-
-	// Delete bgp route
-	if err := mgr.deleteBgpRoute(); err != nil {
-		return 5, err
+	// Do unbind phase
+	for i := md.Phase; i > 0; i-- {
+		switch i {
+		case 1:
+			// Delete eip and vmi ip from ipset
+			if err := mgr.deleteFromSet(ctx); err != nil {
+				return 1, err
+			}
+		case 2:
+			// Delete iptables rules
+			if err := mgr.deleteNat(ctx); err != nil {
+				return 2, err
+			}
+		case 3:
+			// Delete policy route
+			if err := mgr.deleteRoutesAndTable(ctx, mgr.InternalIP); err != nil {
+				return 3, err
+			}
+		case 4:
+			// Remove eip from interface
+			if err := mgr.remoteEipFromIface(ctx); err != nil {
+				return 4, err
+			}
+		case 5:
+			// Delete bgp route
+			if err := mgr.deleteBgpRoute(); err != nil {
+				return 5, err
+			}
+		}
 	}
 
 	// Delete metadata file when clean up finished
