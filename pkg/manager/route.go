@@ -203,7 +203,7 @@ func (mgr *PolicyRouteMgr) SetupRoute() error {
 func (mgr *PolicyRouteMgr) AddEipRule(vmiIp net.IP) error {
 	subcmd := strings.Split(fmt.Sprintf("rule add from %s pref %d lookup %s", vmiIp.String(), RouteTableIdx, RouteTableName), " ")
 	_, err := mgr.mgr.Execute(subcmd...)
-	if err != nil && !errhandle.IsExistError(err) {
+	if err != nil {
 		return err
 	}
 
@@ -213,7 +213,7 @@ func (mgr *PolicyRouteMgr) AddEipRule(vmiIp net.IP) error {
 func (mgr *PolicyRouteMgr) DeleteEipRule(vmiIp net.IP) error {
 	subcmd := strings.Split(fmt.Sprintf("rule del from %s pref %d lookup %s", vmiIp.String(), RouteTableIdx, RouteTableName), " ")
 	_, err := mgr.mgr.Execute(subcmd...)
-	if err != nil && !errhandle.IsExistError(err) {
+	if err != nil {
 		return err
 	}
 

@@ -6,6 +6,7 @@ import (
 	"net"
 
 	ectx "github.com/lucheng0127/kube-eip/pkg/utils/ctx"
+	"github.com/lucheng0127/kube-eip/pkg/utils/errhandle"
 	logger "github.com/lucheng0127/kube-eip/pkg/utils/log"
 )
 
@@ -25,12 +26,12 @@ type EipMgr struct {
 }
 
 func (mgr *EipMgr) addToSet(ctx context.Context) error {
-	if err := mgr.IPSetMgr.AddIPToSet(SET_EIP, mgr.ExternalIP); err != nil {
+	if err := mgr.IPSetMgr.AddIPToSet(SET_EIP, mgr.ExternalIP); err != nil && !errhandle.IsIpsetExistError(err) {
 		logger.Error(ctx, fmt.Sprintf("add eip %s to ipset %s: %s", mgr.ExternalIP.String(), SET_EIP, err.Error()))
 		return err
 	}
 
-	if err := mgr.IPSetMgr.AddIPToSet(SET_VMI, mgr.InternalIP); err != nil {
+	if err := mgr.IPSetMgr.AddIPToSet(SET_VMI, mgr.InternalIP); err != nil && !errhandle.IsIpsetExistError(err) {
 		logger.Error(ctx, fmt.Sprintf("add vmi ip %s to ipset %s: %s", mgr.InternalIP.String(), SET_VMI, err.Error()))
 		return err
 	}
@@ -38,12 +39,12 @@ func (mgr *EipMgr) addToSet(ctx context.Context) error {
 }
 
 func (mgr *EipMgr) deleteFromSet(ctx context.Context) error {
-	if err := mgr.IPSetMgr.DeleteFromSet(SET_EIP, mgr.ExternalIP); err != nil {
+	if err := mgr.IPSetMgr.DeleteFromSet(SET_EIP, mgr.ExternalIP); err != nil && !errhandle.IsIpsetItemNotExist(err) {
 		logger.Error(ctx, fmt.Sprintf("delete eip %s from ipset %s: %s", mgr.ExternalIP.String(), SET_EIP, err.Error()))
 		return err
 	}
 
-	if err := mgr.IPSetMgr.DeleteFromSet(SET_VMI, mgr.InternalIP); err != nil {
+	if err := mgr.IPSetMgr.DeleteFromSet(SET_VMI, mgr.InternalIP); err != nil && !errhandle.IsIpsetItemNotExist(err) {
 		logger.Error(ctx, fmt.Sprintf("delete vmi ip %s from ipset %s: %s", mgr.InternalIP.String(), SET_VMI, err.Error()))
 		return err
 	}
@@ -64,12 +65,12 @@ func (mgr *EipMgr) addNat(ctx context.Context) error {
 }
 
 func (mgr *EipMgr) deleteNat(ctx context.Context) error {
-	if err := mgr.NatMgr.DeletePreroutingRule(mgr.ExternalIP, mgr.InternalIP); err != nil {
+	if err := mgr.NatMgr.DeletePreroutingRule(mgr.ExternalIP, mgr.InternalIP); err != nil && !errhandle.IsIptablesRuleNotExist(err) {
 		logger.Error(ctx, fmt.Sprintf("delete dnat eip %s to vmi ip %s: %s", mgr.ExternalIP.String(), mgr.InternalIP.String(), err.Error()))
 		return err
 	}
 
-	if err := mgr.NatMgr.DeletePostroutingRule(mgr.ExternalIP, mgr.InternalIP, SET_INTERNAL); err != nil {
+	if err := mgr.NatMgr.DeletePostroutingRule(mgr.ExternalIP, mgr.InternalIP, SET_INTERNAL); err != nil && !errhandle.IsIptablesRuleNotExist(err) {
 		logger.Error(ctx, fmt.Sprintf("delete snat cmi ip %s to eip %s: %s", mgr.InternalIP.String(), mgr.ExternalIP.String(), err.Error()))
 		return err
 	}
@@ -77,7 +78,7 @@ func (mgr *EipMgr) deleteNat(ctx context.Context) error {
 }
 
 func (mgr *EipMgr) addPolicyRoute(ctx context.Context, vmiIP net.IP) error {
-	if err := mgr.RouteMgr.AddEipRule(vmiIP); err != nil {
+	if err := mgr.RouteMgr.AddEipRule(vmiIP); err != nil && !errhandle.IsNetlinkExistError(err) {
 		logger.Error(ctx, fmt.Sprintf("add vmi %s eip rule: %s", vmiIP.String(), err.Error()))
 		return err
 	}
@@ -86,7 +87,7 @@ func (mgr *EipMgr) addPolicyRoute(ctx context.Context, vmiIP net.IP) error {
 }
 
 func (mgr *EipMgr) deleteRoutesAndTable(ctx context.Context, vmiIP net.IP) error {
-	if err := mgr.RouteMgr.DeleteEipRule(vmiIP); err != nil {
+	if err := mgr.RouteMgr.DeleteEipRule(vmiIP); err != nil && !errhandle.IsRuleNotExist(err) {
 		logger.Error(ctx, fmt.Sprintf("del vmi %s eip rule: %s", vmiIP.String(), err.Error()))
 		return err
 	}
@@ -95,7 +96,7 @@ func (mgr *EipMgr) deleteRoutesAndTable(ctx context.Context, vmiIP net.IP) error
 }
 
 func (mgr *EipMgr) addEipToIface(ctx context.Context) error {
-	if err := mgr.RouteMgr.AddEipToIface(mgr.ExternalIP); err != nil {
+	if err := mgr.RouteMgr.AddEipToIface(mgr.ExternalIP); err != nil && !errhandle.IsNetlinkExistError(err) {
 		logger.Error(ctx, fmt.Sprintf("add eip %s to hyper interface %s", mgr.ExternalIP.String(), err.Error()))
 		return err
 	}
@@ -104,7 +105,7 @@ func (mgr *EipMgr) addEipToIface(ctx context.Context) error {
 }
 
 func (mgr *EipMgr) remoteEipFromIface(ctx context.Context) error {
-	if err := mgr.RouteMgr.RemoveEipFromIface(mgr.ExternalIP); err != nil {
+	if err := mgr.RouteMgr.RemoveEipFromIface(mgr.ExternalIP); err != nil && !errhandle.IsIPNotExist(err) {
 		logger.Error(ctx, fmt.Sprintf("remove eip %s from hyper interface %s", mgr.ExternalIP.String(), err.Error()))
 		return err
 	}

@@ -109,20 +109,36 @@ func (iptables *IptablesMgr) SetupChains(eipset, vmiSet string) error {
 }
 
 func (iptables *IptablesMgr) AddPreroutingRule(eip, vmiIp net.IP) error {
-	subcmd := strings.Split(fmt.Sprintf("-t nat -A %s -d %s -j DNAT --to-destination %s", CHAIN_PREROUTING, eip.String(), vmiIp.String()), " ")
-	_, err := iptables.mgr.Execute(subcmd...)
-	if err != nil && !errhandle.IsExistError(err) {
+	subcmd := strings.Split(fmt.Sprintf("-t nat -S %s", CHAIN_PREROUTING), " ")
+	currentPrerouting, err := iptables.mgr.Execute(subcmd...)
+	if err != nil {
 		return err
+	}
+
+	if !strings.Contains(currentPrerouting, vmiIp.String()) {
+		subcmd = strings.Split(fmt.Sprintf("-t nat -A %s -d %s -j DNAT --to-destination %s", CHAIN_PREROUTING, eip.String(), vmiIp.String()), " ")
+		_, err = iptables.mgr.Execute(subcmd...)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func (iptables *IptablesMgr) AddPostroutingRule(eip, vmiIp net.IP, internalSet string) error {
-	subcmd := strings.Split(fmt.Sprintf("-t nat -A %s -s %s -m set ! --match-set %s dst -j SNAT --to %s", CHAIN_POSTROUTING, vmiIp.String(), internalSet, eip.String()), " ")
-	_, err := iptables.mgr.Execute(subcmd...)
-	if err != nil && !errhandle.IsExistError(err) {
+	subcmd := strings.Split(fmt.Sprintf("-t nat -S %s", CHAIN_POSTROUTING), " ")
+	currentPostrouting, err := iptables.mgr.Execute(subcmd...)
+	if err != nil {
 		return err
+	}
+
+	if !strings.Contains(currentPostrouting, vmiIp.String()) {
+		subcmd = strings.Split(fmt.Sprintf("-t nat -A %s -s %s -m set ! --match-set %s dst -j SNAT --to %s", CHAIN_POSTROUTING, vmiIp.String(), internalSet, eip.String()), " ")
+		_, err = iptables.mgr.Execute(subcmd...)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
