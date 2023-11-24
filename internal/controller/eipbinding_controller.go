@@ -64,6 +64,7 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	// Get EipBinding object
 	var eb extensionv1.EipBinding
+
 	if err := r.Get(ctx, req.NamespacedName, &eb); err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -72,6 +73,12 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		log.Error(err, "unable to fetch EipBinding")
 		return ctrl.Result{}, err
 	}
+
+	defer func() {
+		if err := r.Update(ctx, &eb); err != nil {
+			log.Error(err, "update EipBinding")
+		}
+	}()
 
 	// Init vars
 	newHyper, newIPAddr, err := r.getVMIInfo(eb)
@@ -92,9 +99,7 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if !controllerutil.ContainsFinalizer(&eb, finalizerName) {
 			controllerutil.AddFinalizer(&eb, finalizerName)
 
-			if err := r.Update(ctx, &eb); err != nil {
-				return ctrl.Result{}, err
-			}
+			return ctrl.Result{}, err
 		}
 	} else {
 		// EipBinding is being deleted
@@ -115,18 +120,13 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 
 		controllerutil.RemoveFinalizer(&eb, finalizerName)
-		if err := r.Update(ctx, &eb); err != nil {
-			log.Error(err, "remove finalizer for EipBinding failed")
-			return ctrl.Result{}, err
-		}
-
-		log.Info("Deleted EipBinding")
+		log.Info("Delete EipBinding finished")
 		return ctrl.Result{}, nil
 	}
 
 	// Work in progress, skip
 	if eb.Spec.Phase == extensionv1.PhaseProcessing || eb.Spec.Phase == extensionv1.PhaseError {
-		log.Info("EipBinding work in progress, skip")
+		log.Info("EipBinding work in progress or error status, skip")
 		return ctrl.Result{}, nil
 	}
 
@@ -137,21 +137,12 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		err := r.syncEipBinding(ctx, "unbind", eb.Spec.CurrentHyper, eb.Spec.EipAddr, eb.Spec.CurrentIPAddr)
 		if err != nil {
 			eb.Spec.Phase = extensionv1.PhaseError
-			if err := r.Client.Update(ctx, &eb); err != nil {
-				log.Error(err, "update EipBinding phase")
-			}
-
 			return ctrl.Result{}, err
 		}
 
 		log.Info("sync eip rules succeed")
 
 		eb.Spec.Phase = extensionv1.PhaseReady
-		if err := r.Client.Update(ctx, &eb); err != nil {
-			log.Error(err, "update EipBinding phase")
-			return ctrl.Result{}, err
-		}
-
 		return ctrl.Result{}, nil
 	}
 
@@ -171,10 +162,6 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	// Apply eip bind and unbind
 	eb.Spec.Phase = extensionv1.PhaseProcessing
-	if err := r.Client.Update(ctx, &eb); err != nil {
-		log.Error(err, "update EipBinding phase")
-		return ctrl.Result{}, err
-	}
 
 	eg := new(errgroup.Group)
 
@@ -196,19 +183,12 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if err := eg.Wait(); err != nil {
 		eb.Spec.Phase = extensionv1.PhaseError
-		if err := r.Client.Update(ctx, &eb); err != nil {
-			log.Error(err, "update EipBinding phase")
-			return ctrl.Result{}, err
-		}
+		return ctrl.Result{}, err
 	}
 
 	log.Info("Apply EipBinding succeed")
 
 	eb.Spec.Phase = extensionv1.PhaseReady
-	if err := r.Client.Update(ctx, &eb); err != nil {
-		log.Error(err, "update EipBinding phase")
-		return ctrl.Result{}, err
-	}
 
 	log.Info("Eip bind succeed")
 	return ctrl.Result{}, nil
