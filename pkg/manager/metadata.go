@@ -22,8 +22,12 @@ type EipMetadata struct {
 	Phase      int    `json:"phase"`
 }
 
+func formatMDPath(eip, iip string) string {
+	return fmt.Sprintf("%s/eip-%s-%s.metadata", MDDir, eip, iip)
+}
+
 func (m *EipMetadata) getMDFilepath() string {
-	return fmt.Sprintf("%s/eip-%s.metadata", MDDir, m.ExternalIP)
+	return formatMDPath(m.ExternalIP, m.InternalIP)
 }
 
 func (m *EipMetadata) dumpMD() error {
@@ -55,9 +59,9 @@ func (m *EipMetadata) deleteMD() error {
 	return nil
 }
 
-func parseMD(eip string) (*EipMetadata, error) {
+func parseMD(eip, iip string) (*EipMetadata, error) {
 	md := new(EipMetadata)
-	filepath := fmt.Sprintf("%s/eip-%s.metadata", MDDir, eip)
+	filepath := formatMDPath(eip, iip)
 
 	if _, err := os.Stat(filepath); errors.Is(err, os.ErrNotExist) {
 		// If metadata file not exist, do not return error

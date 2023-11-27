@@ -153,10 +153,10 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Handle vmi info change
-	staleHyper := eb.Spec.LastHyper
-	staleIPAddr := eb.Spec.LastIPAddr
-	eb.Spec.LastHyper = eb.Spec.CurrentHyper
-	eb.Spec.LastIPAddr = eb.Spec.CurrentIPAddr
+	staleHyper := eb.Spec.CurrentHyper
+	staleIPAddr := eb.Spec.CurrentIPAddr
+	eb.Spec.LastHyper = staleHyper
+	eb.Spec.LastIPAddr = staleIPAddr
 	eb.Spec.CurrentHyper = newHyper
 	eb.Spec.CurrentIPAddr = newIPAddr
 
@@ -172,7 +172,6 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			return r.syncEipBinding(ctx, "unbind", staleHyper, eb.Spec.EipAddr, staleIPAddr)
 		})
 
-		log.Info("Clean staled EipBinding succeed")
 	}
 
 	log.Info("Apply eip rules on hyper")
