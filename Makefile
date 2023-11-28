@@ -76,13 +76,21 @@ run: manifests generate fmt vet ## Run a controller from your host.
 
 .PHONY: operator-buildfile
 operator-buildfile:
-	rm -rf Dockerfile && cp buildfile/operator/Dockerfile ./
+	rm -rf Dockerfile && cp buildfile/operator/Dockerfile_operator ./Dockerfile
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build-operator
 docker-build-operator: operator-buildfile ## Build docker image with the manager.
+	$(CONTAINER_TOOL) build -t ${IMG} .
+
+.PHONY: agent-buildfile
+agent-buildfile:
+	rm -rf Dockerfile && cp buildfile/agent/Dockerfile_agent ./Dockerfile
+
+.PHONY: docker-build-agent
+docker-build-agent: agent-buildfile
 	$(CONTAINER_TOOL) build -t ${IMG} .
 
 .PHONY: docker-push

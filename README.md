@@ -24,14 +24,27 @@ There are two compose Operator and EipAgent. Operator watch the EipBinding and V
 
 **operator**
 
+build operator images and deploy
+
 ```
 # Build images
 IMG=quay.io/shawnlu0127/eipbinding_operator:20231128 make docker-build-operator
+
+# Push images
+IMG=quay.io/shawnlu0127/eipbinding_operator:20231128 make docker-push
+
 # Deploy operator with images
 IMG=quay.io/shawnlu0127/eipbinding_operator:20231128 make deploy
 ```
 
 **eip_agent** run as daemonset
+
+build eip_agent images and push
+
+```
+IMG=quay.io/shawnlu0127/eip_agent:20231128 make docker-build-agent
+IMG=quay.io/shawnlu0127/eip_agent:20231128 make docker-push
+```
 
 ```
 root@shawn-server:~/workspace/kube-eip/cmd/eip_agent# ./eip_agent -h
