@@ -25,10 +25,10 @@ There are two compose Operator and EipAgent. Operator watch the EipBinding and V
 **operator**
 
 ```
-make manifest
-make install
-make docker-build-operator
-make run or make deploy
+# Build images
+IMG=quay.io/shawnlu0127/eipbinding_operator:20231128 make docker-build-operator
+# Deploy operator with images
+IMG=quay.io/shawnlu0127/eipbinding_operator:20231128 make deploy
 ```
 
 **eip_agent** run as daemonset
