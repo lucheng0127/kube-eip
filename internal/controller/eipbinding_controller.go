@@ -46,9 +46,11 @@ type EipBindingReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=extension.my.domain,resources=eipbindings,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=extension.my.domain,resources=eipbindings/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=extension.my.domain,resources=eipbindings/finalizers,verbs=update
+//+kubebuilder:rbac:groups=extension.lucheng0127,resources=eipbindings,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=extension.lucheng0127,resources=eipbindings/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=extension.lucheng0127,resources=eipbindings/finalizers,verbs=update
+//+kubebuilder:rbac:groups=kubevirt.io,resources=virtualmachineinstances,verbs=get;list;watch
+//+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

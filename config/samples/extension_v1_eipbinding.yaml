@@ -3,11 +3,11 @@ kind: EipBinding
 metadata:
   labels:
     app.kubernetes.io/name: eipbinding
-    app.kubernetes.io/instance: eipbinding-sample
+    app.kubernetes.io/instance: cirros
     app.kubernetes.io/part-of: kube-eip
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kube-eip
-  name: eipbinding-sample
+  name: cirros
 spec:
   eipAddr: 192.168.18.15
   vmiName: cirros

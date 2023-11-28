@@ -5,7 +5,15 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - extension.my.domain
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - extension.lucheng0127
   resources:
   - eipbindings
   verbs:
@@ -17,16 +25,24 @@ rules:
   - update
   - watch
 - apiGroups:
-  - extension.my.domain
+  - extension.lucheng0127
   resources:
   - eipbindings/finalizers
   verbs:
   - update
 - apiGroups:
-  - extension.my.domain
+  - extension.lucheng0127
   resources:
   - eipbindings/status
   verbs:
   - get
   - patch
   - update
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachineinstances
+  verbs:
+  - get
+  - list
+  - watch
