@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/gmccue/go-ipset v0.0.0-20151126205411-75b14f6e6ee0
+	github.com/google/gopacket v1.1.19
 	github.com/onsi/ginkgo/v2 v2.11.0
 	github.com/onsi/gomega v1.27.10
 	github.com/sirupsen/logrus v1.9.0
