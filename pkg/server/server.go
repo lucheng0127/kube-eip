@@ -19,15 +19,10 @@ import (
 )
 
 type EipAgent struct {
-	Port   int
-	RpcSvc binding.EipAgentServer
-	Ctx    context.Context
-
+	Port          int
+	RpcSvc        binding.EipAgentServer
+	Ctx           context.Context
 	InternalAddrs []string
-	ExternalGWIP  net.IP
-	ExternalGWDev string
-	BgpType       string
-	EipCidr       string
 }
 
 func setLogger(level string) {
@@ -90,19 +85,16 @@ func Launch(cCtx *cli.Context) error {
 	gwDev := cCtx.String("gateway-dev")
 	bgpType := cCtx.String("bgp-type")
 	eipCidr := cCtx.String("eip-cidr")
+	arpPoisoning := cCtx.Bool("arp-poisoning")
 
 	setLogger(cCtx.String("log-level"))
 	agent := NewAgent(
 		setListenPort(cCtx.Int("port")),
 		setInternalAddrs(cCtx.StringSlice("internal-net")),
-		setExternalGWIP(gwIP),
-		setExternalGEDev(gwDev),
-		setExternalBgpType(bgpType),
-		setEipCidr(eipCidr),
 	)
 
 	// Setup manager
-	if err := manager.RegisterManagers(gwIP, gwDev, bgpType, eipCidr, agent.InternalAddrs...); err != nil {
+	if err := manager.RegisterManagers(gwIP, gwDev, bgpType, eipCidr, arpPoisoning, agent.InternalAddrs...); err != nil {
 		return err
 	}
 

@@ -47,7 +47,7 @@ IMG=quay.io/shawnlu0127/eip_agent:20231128 make docker-push
 ```
 
 ```
-root@shawn-server:~/workspace/kube-eip/cmd/eip_agent# ./eip_agent -h
+root@shawn-server:~/workspace/kube-eip# eip_agent -h
 NAME:
    EipAgent - A new cli application
 
@@ -65,6 +65,7 @@ GLOBAL OPTIONS:
    --gateway-dev value                            externel network gateway device
    --bgp-type value                               bgp manager type, default is none, gobgp is avaliable (default: "none")
    --eip-cidr value                               eip network cidr
+   --arp-poisoning                                whether use arp poisoning to make a arp reply for eip, default is false, when enable will not add eip to external network gateway device (default: false)
    --help, -h                                     show help
 ```
 

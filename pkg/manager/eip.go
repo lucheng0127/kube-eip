@@ -20,6 +20,7 @@ type EipMgr struct {
 	NatMgr   NatManager
 	RouteMgr RouteManager
 	BgpMgr   BgpManager
+	ArpMgr   ArpManager
 
 	ExternalIP net.IP
 	InternalIP net.IP
@@ -172,9 +173,13 @@ func (mgr *EipMgr) BindEip() (int, error) {
 		case 4:
 			// Add eip to interface
 			// If use arp snooping, no need do this
-			if err := mgr.addEipToIface(ctx); err != nil {
-				md.Phase = 3
-				return 4, err
+			if mgr.ArpMgr == nil {
+				if err := mgr.addEipToIface(ctx); err != nil {
+					md.Phase = 3
+					return 4, err
+				}
+			} else {
+				mgr.ArpMgr.AddTarget(mgr.ExternalIP.String())
 			}
 		case 5:
 			// Add bgp route
@@ -223,9 +228,13 @@ func (mgr *EipMgr) UnbindEip() (int, error) {
 				return 3, err
 			}
 		case 4:
-			// Remove eip from interface
-			if err := mgr.remoteEipFromIface(ctx); err != nil {
-				return 4, err
+			if mgr.ArpMgr == nil {
+				// Remove eip from interface
+				if err := mgr.remoteEipFromIface(ctx); err != nil {
+					return 4, err
+				}
+			} else {
+				mgr.ArpMgr.DeleteTarget(mgr.ExternalIP.String())
 			}
 		case 5:
 			// Delete bgp route

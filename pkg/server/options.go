@@ -1,7 +1,5 @@
 package server
 
-import "net"
-
 type AgentOption func(*EipAgent)
 
 func setListenPort(port int) AgentOption {
@@ -10,32 +8,8 @@ func setListenPort(port int) AgentOption {
 	}
 }
 
-func setExternalGWIP(addr net.IP) AgentOption {
-	return func(mgr *EipAgent) {
-		mgr.ExternalGWIP = addr
-	}
-}
-
-func setExternalGEDev(dev string) AgentOption {
-	return func(mgr *EipAgent) {
-		mgr.ExternalGWDev = dev
-	}
-}
-
 func setInternalAddrs(addrs []string) AgentOption {
 	return func(mgr *EipAgent) {
 		mgr.InternalAddrs = addrs
-	}
-}
-
-func setExternalBgpType(bgpType string) AgentOption {
-	return func(mgr *EipAgent) {
-		mgr.BgpType = bgpType
-	}
-}
-
-func setEipCidr(cidr string) AgentOption {
-	return func(mgr *EipAgent) {
-		mgr.EipCidr = cidr
 	}
 }

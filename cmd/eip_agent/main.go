@@ -47,6 +47,11 @@ func main() {
 				Required: true,
 				Usage:    "eip network cidr",
 			},
+			&cli.BoolFlag{
+				Name:  "arp-poisoning",
+				Value: false,
+				Usage: "whether use arp poisoning to make a arp reply for eip, default is false, when enable will not add eip to external network gateway device",
+			},
 		},
 	}
 
