@@ -1,9 +1,11 @@
 package manager
 
 import (
+	"fmt"
 	"net"
+	"strings"
 
-	ipset "github.com/gmccue/go-ipset"
+	"github.com/lucheng0127/kube-eip/pkg/utils/cmd"
 )
 
 const (
@@ -20,14 +22,14 @@ type IpsetManager interface {
 }
 
 type CmdIpsetMgr struct {
-	mgr *ipset.IPSet
+	mgr *cmd.CmdMgr
 }
 
 var IpsetMgr IpsetManager
 
 func newIpsetManager() (IpsetManager, error) {
 	ipsetMgr := new(CmdIpsetMgr)
-	mgr, err := ipset.New()
+	mgr, err := cmd.NewCmdMgr("ipset")
 	if err != nil {
 		return nil, err
 	}
@@ -47,12 +49,14 @@ func RegisterIPSetMgr() error {
 }
 
 func (ipset *CmdIpsetMgr) AddSetAndEntries(name, setType string, entries ...string) error {
-	if err := ipset.mgr.Create(name, setType); err != nil {
+	subcmd := strings.Split(fmt.Sprintf("create %s %s", name, setType), " ")
+	if _, err := ipset.mgr.Execute(subcmd...); err != nil {
 		return err
 	}
 
 	for _, entry := range entries {
-		if err := ipset.mgr.Add(name, entry); err != nil {
+		subcmd = strings.Split(fmt.Sprintf("add %s %s", name, entry), " ")
+		if _, err := ipset.mgr.Execute(subcmd...); err != nil {
 			return err
 		}
 	}
@@ -65,9 +69,13 @@ func (ipset *CmdIpsetMgr) SetupIpset(name, setType string, entries ...string) er
 }
 
 func (ipset *CmdIpsetMgr) AddIPToSet(name string, ip net.IP) error {
-	return ipset.mgr.Add(name, ip.String())
+	subcmd := strings.Split(fmt.Sprintf("add %s %s", name, ip.String()), " ")
+	_, err := ipset.mgr.Execute(subcmd...)
+	return err
 }
 
 func (ipset *CmdIpsetMgr) DeleteFromSet(name string, ip net.IP) error {
-	return ipset.mgr.Delete(name, ip.String())
+	subcmd := strings.Split(fmt.Sprintf("del %s %s", name, ip.String()), " ")
+	_, err := ipset.mgr.Execute(subcmd...)
+	return err
 }

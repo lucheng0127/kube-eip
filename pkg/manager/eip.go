@@ -32,10 +32,15 @@ func (mgr *EipMgr) addToSet(ctx context.Context) error {
 		return err
 	}
 
+	logger.Info(ctx, fmt.Sprintf("add eip %s to ipset %s succeed", mgr.ExternalIP.String(), SET_EIP))
+
 	if err := mgr.IPSetMgr.AddIPToSet(SET_VMI, mgr.InternalIP); err != nil && !errhandle.IsIpsetExistError(err) {
 		logger.Error(ctx, fmt.Sprintf("add vmi ip %s to ipset %s: %s", mgr.InternalIP.String(), SET_VMI, err.Error()))
 		return err
 	}
+
+	logger.Info(ctx, fmt.Sprintf("add vmi %s to ipset %s succeed", mgr.InternalIP.String(), SET_VMI))
+
 	return nil
 }
 
@@ -45,10 +50,15 @@ func (mgr *EipMgr) deleteFromSet(ctx context.Context) error {
 		return err
 	}
 
+	logger.Info(ctx, fmt.Sprintf("delete eip %s from ipset %s succeed", mgr.ExternalIP.String(), SET_EIP))
+
 	if err := mgr.IPSetMgr.DeleteFromSet(SET_VMI, mgr.InternalIP); err != nil && !errhandle.IsIpsetItemNotExist(err) {
 		logger.Error(ctx, fmt.Sprintf("delete vmi ip %s from ipset %s: %s", mgr.InternalIP.String(), SET_VMI, err.Error()))
 		return err
 	}
+
+	logger.Info(ctx, fmt.Sprintf("delete vmi %s from ipset %s succeed", mgr.InternalIP.String(), SET_VMI))
+
 	return nil
 }
 
@@ -58,10 +68,15 @@ func (mgr *EipMgr) addNat(ctx context.Context) error {
 		return err
 	}
 
+	logger.Info(ctx, fmt.Sprintf("add dnat eip %s to vmi ip %s succeed", mgr.ExternalIP.String(), mgr.InternalIP.String()))
+
 	if err := mgr.NatMgr.AddPostroutingRule(mgr.ExternalIP, mgr.InternalIP, SET_INTERNAL); err != nil {
-		logger.Error(ctx, fmt.Sprintf("add snat cmi ip %s to eip %s: %s", mgr.InternalIP.String(), mgr.ExternalIP.String(), err.Error()))
+		logger.Error(ctx, fmt.Sprintf("add snat vmi ip %s to eip %s: %s", mgr.InternalIP.String(), mgr.ExternalIP.String(), err.Error()))
 		return err
 	}
+
+	logger.Info(ctx, fmt.Sprintf("add snat vmi ip %s to eip %s succeed", mgr.InternalIP.String(), mgr.ExternalIP.String()))
+
 	return nil
 }
 
@@ -71,10 +86,15 @@ func (mgr *EipMgr) deleteNat(ctx context.Context) error {
 		return err
 	}
 
+	logger.Info(ctx, fmt.Sprintf("delete dnat eip %s to vmi ip %s succeed", mgr.ExternalIP.String(), mgr.InternalIP.String()))
+
 	if err := mgr.NatMgr.DeletePostroutingRule(mgr.ExternalIP, mgr.InternalIP, SET_INTERNAL); err != nil && !errhandle.IsIptablesRuleNotExist(err) {
-		logger.Error(ctx, fmt.Sprintf("delete snat cmi ip %s to eip %s: %s", mgr.InternalIP.String(), mgr.ExternalIP.String(), err.Error()))
+		logger.Error(ctx, fmt.Sprintf("delete snat vmi ip %s to eip %s: %s", mgr.InternalIP.String(), mgr.ExternalIP.String(), err.Error()))
 		return err
 	}
+
+	logger.Info(ctx, fmt.Sprintf("delete snat vmi ip %s to eip %s succeed", mgr.InternalIP.String(), mgr.ExternalIP.String()))
+
 	return nil
 }
 
@@ -83,6 +103,8 @@ func (mgr *EipMgr) addPolicyRoute(ctx context.Context, vmiIP net.IP) error {
 		logger.Error(ctx, fmt.Sprintf("add vmi %s eip rule: %s", vmiIP.String(), err.Error()))
 		return err
 	}
+
+	logger.Info(ctx, fmt.Sprintf("add vmi %s eip rule succeed", vmiIP.String()))
 
 	return nil
 }
@@ -93,6 +115,8 @@ func (mgr *EipMgr) deleteRoutesAndTable(ctx context.Context, vmiIP net.IP) error
 		return err
 	}
 
+	logger.Info(ctx, fmt.Sprintf("del vmi %s eip rule succeed", vmiIP.String()))
+
 	return nil
 }
 
@@ -102,6 +126,8 @@ func (mgr *EipMgr) addEipToIface(ctx context.Context) error {
 		return err
 	}
 
+	logger.Info(ctx, fmt.Sprintf("add eip %s to hyper interface succeed", mgr.ExternalIP.String()))
+
 	return nil
 }
 
@@ -110,6 +136,8 @@ func (mgr *EipMgr) remoteEipFromIface(ctx context.Context) error {
 		logger.Error(ctx, fmt.Sprintf("remove eip %s from hyper interface %s", mgr.ExternalIP.String(), err.Error()))
 		return err
 	}
+
+	logger.Info(ctx, fmt.Sprintf("remove eip %s from hyper interface succeed", mgr.ExternalIP.String()))
 
 	return nil
 }
@@ -122,6 +150,26 @@ func (mgr *EipMgr) deleteBgpRoute() error {
 	return nil
 }
 
+//func (mgr *EipMgr) checkEipConflict() (bool, error) {
+//	cmdMgr, err := cmd.NewCmdMgr("ls")
+//	if err != nil {
+//		return false, err
+//	}
+//
+//	subcmd := strings.Split(MDDir, " ")
+//	out, err := cmdMgr.Execute(subcmd...)
+//
+//	if err != nil {
+//		return false, err
+//	}
+//
+//	if strings.Contains(out, mgr.ExternalIP.String()) {
+//		return true, nil
+//	}
+//
+//	return false, nil
+//}
+
 func (mgr *EipMgr) BindEip() (int, error) {
 	// Parse metadata
 	ctx := ectx.NewTraceContext()
@@ -133,6 +181,17 @@ func (mgr *EipMgr) BindEip() (int, error) {
 
 	if md == nil {
 		// TODO(shawnlu) Check eip conflict
+		// migrate vmi, will tigger unbind after bind succeed, and will delete eip from ipset, need fix it
+		//eipInUsed, err := mgr.checkEipConflict()
+		//if err != nil {
+		//	logger.Error(ctx, fmt.Sprintf("check eip conflict %s", err.Error()))
+		//	return 0, err
+		//}
+
+		//if eipInUsed {
+		//	logger.Warn(ctx, fmt.Sprintf("eip %s already in used", mgr.ExternalIP.String()))
+		//	return 0, nil
+		//}
 
 		// Init metadata
 		md = new(EipMetadata)
