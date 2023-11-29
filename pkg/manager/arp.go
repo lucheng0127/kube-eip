@@ -18,6 +18,8 @@ func RegisterAndRunArpManager(dev string) error {
 
 	ArpMgr = mgr
 
+	// TODO(shawnlu): get current eip from ipset
+
 	go ArpMgr.Poisoning()
 	return nil
 }

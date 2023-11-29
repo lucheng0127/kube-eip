@@ -46,6 +46,9 @@ IMG=quay.io/shawnlu0127/eip_agent:20231128 make docker-build-agent
 IMG=quay.io/shawnlu0127/eip_agent:20231128 make docker-push
 ```
 
+**Do not use arp poisoning is recommanded**
+If eip_agent is down, there can no longer response arp for eip.
+
 ```
 root@shawn-server:~/workspace/kube-eip# eip_agent -h
 NAME:
