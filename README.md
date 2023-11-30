@@ -28,13 +28,13 @@ build operator images and deploy
 
 ```
 # Build images
-IMG=quay.io/shawnlu0127/eipbinding_operator:20231128 make docker-build-operator
+IMG=quay.io/shawnlu0127/eipbinding_operator:20231130 make docker-build-operator
 
 # Push images
-IMG=quay.io/shawnlu0127/eipbinding_operator:20231128 make docker-push
+IMG=quay.io/shawnlu0127/eipbinding_operator:20231130 make docker-push
 
 # Deploy operator with images
-IMG=quay.io/shawnlu0127/eipbinding_operator:20231128 make deploy
+IMG=quay.io/shawnlu0127/eipbinding_operator:20231130 make deploy
 ```
 
 **eip_agent** run as daemonset

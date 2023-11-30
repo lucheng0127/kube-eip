@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/shawnlu0127/eipbinding_operator
-  newTag: "20231128"
+  newTag: "20231130"

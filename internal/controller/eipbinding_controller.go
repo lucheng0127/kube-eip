@@ -154,6 +154,13 @@ func (r *EipBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, nil
 	}
 
+	// For vmi, if hyper change, vmi ip must change, so if vmi ip not change
+	// it means vmi is migrate and the vmi info not sync finished
+	if eb.Spec.CurrentHyper != newHyper && eb.Spec.CurrentIPAddr == newIPAddr {
+		log.Info("VMI info not update finished, skip")
+		return ctrl.Result{}, nil
+	}
+
 	// Handle vmi info change
 	staleHyper := eb.Spec.CurrentHyper
 	staleIPAddr := eb.Spec.CurrentIPAddr
