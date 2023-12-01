@@ -1,0 +1,121 @@
+# TODO(user): change content of config map
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eip-agent-cm
+  namespace: kube-eip-system
+data:
+  svc_net: 192.168.223.0/24
+  pod_net: 10.244.0.0/16
+  eip_net: 192.168.18.0/24
+  eip_gw_ip: 192.168.18.1
+  eip_gw_dev: enp2s0
+  log_level: debug
+
+---
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: eip-agent
+  namespace: kube-eip-system
+spec:
+  selector:
+    matchLabels:
+      name: kube-eip-agent
+  template:
+    metadata:
+      labels:
+        name: kube-eip-agent
+    spec:
+      hostNetwork: true
+      containers:
+      - name: eip-agent
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: eip-md
+          mountPath: /var/run/eip_agent
+        - name: iproute2
+          mountPath: /etc/iproute2
+        - name: sbin
+          mountPath: /usr/sbin
+          readOnly: true
+        - name: eip-agent-cm
+          mountPath: "/config"
+          readOnly: true
+        image: quay.io/shawnlu0127/eip_agent:20231204
+        command: ["/entrypoint.sh"]
+        env:
+          - name: AGENT_SVC_NET
+            valueFrom:
+              configMapKeyRef:
+                name: eip-agent-cm
+                key: "svc_net"
+          - name: AGENT_POD_NET
+            valueFrom:
+              configMapKeyRef:
+                name: eip-agent-cm
+                key: "pod_net"
+          - name: AGENT_EIP_NET
+            valueFrom:
+              configMapKeyRef:
+                name: eip-agent-cm
+                key: "eip_net"
+          - name: AGENT_EIP_GW_IP
+            valueFrom:
+              configMapKeyRef:
+                name: eip-agent-cm
+                key: "eip_gw_ip"
+          - name: AGENT_EIP_GW_DEV
+            valueFrom:
+              configMapKeyRef:
+                name: eip-agent-cm
+                key: "eip_gw_dev"
+          - name: AGENT_LOG_LEVEL
+            valueFrom:
+              configMapKeyRef:
+                name: eip-agent-cm
+                key: "log_level"
+        readinessProbe:
+          tcpSocket:
+            port: 6127
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 6127
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        resources:
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+      volumes:
+      - name: eip-md
+        hostPath:
+          path: /var/run/eip_agent
+      - name: iproute2
+        hostPath:
+          path: /etc/iproute2
+      - name: sbin
+        hostPath:
+          path: /usr/sbin
+      - name: eip-agent-cm
+        configMap:
+          name: eip-agent-cm
+          items:
+          - key: "svc_net"
+            path: "svc_net"
+          - key: "pod_net"
+            path: "pod_net"
+          - key: "eip_net"
+            path: "eip_net"
+          - key: "eip_gw_ip"
+            path: "eip_gw_ip"
+          - key: "eip_gw_dev"
+            path: "eip_gw_dev"
+          - key: "log_level"
+            path: "log_level"
