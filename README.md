@@ -22,32 +22,69 @@ There are two compose Operator and EipAgent. Operator watch the EipBinding and V
 
 ## Usage
 
-**operator**
+The stable eipbinding operator and eip agent docker images
 
-build operator images and deploy
+* quay.io/shawnlu0127/eipbinding_operator:20231130
+* quay.io/shawnlu0127/eip_agent:20231204
+
+*TODO(user): modify configmap eip-agent-cm (config/agent/eip_agent.yaml)*
 
 ```
-# Build images
+# Deploy
+IMG={your own image name and tag} make deploy
+make deploy-agent
+
+# Undeploy
+make undeploy
+make undeploy-agent
+```
+
+**Build your own image, push and deploy**
+
+```
+# Build eipbinding operator and eip agent
 IMG=quay.io/shawnlu0127/eipbinding_operator:20231130 make docker-build-operator
+IMG=quay.io/shawnlu0127/eip_agent:20231204 make docker-build-agent
 
-# Push images
+# Push your image
 IMG=quay.io/shawnlu0127/eipbinding_operator:20231130 make docker-push
+IMG=quay.io/shawnlu0127/eip_agent:20231204 make docker-push
 
-# Deploy operator with images
+# Deploy eipbinding operator and eip agent
 IMG=quay.io/shawnlu0127/eipbinding_operator:20231130 make deploy
+make deploy-agent
+
+# Undeploy
+make undeploy
+make undeploy-agent
 ```
 
-**eip_agent** run as daemonset
+**eipctl**
 
-build eip_agent images and push
+eipctl is an command line tool to bind or unbind eip to or from vmi
 
 ```
-IMG=quay.io/shawnlu0127/eip_agent:20231128 make docker-build-agent
-IMG=quay.io/shawnlu0127/eip_agent:20231128 make docker-push
+root@shawn-server:~/workspace/kube-eip# eipctl -h
+NAME:
+   eipctl - A new cli application
+
+USAGE:
+   eipctl [global options] command [command options] [arguments...]
+
+COMMANDS:
+   help, h  Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --target value  rpc server address, default 127.0.0.1:6127 (default: "127.0.0.1:6127")
+   --eip-ip value  eip ip address
+   --vmi-ip value  vmi ip address
+   --action value  action, bind or unbind
+   --help, -h      show help
 ```
 
-**Do not use arp poisoning is recommanded**
-If eip_agent is down, there can no longer response arp for eip.
+**eip_agent**
+
+eip_agent run as daemonset in pod, there is the help info of it
 
 ```
 root@shawn-server:~/workspace/kube-eip# eip_agent -h
@@ -72,23 +109,31 @@ GLOBAL OPTIONS:
    --help, -h                                     show help
 ```
 
-**eipctl** a command line tool to bind and unbind eip to vmi
+**Have fun and enjoy it ٩(๑>◡<๑)۶**
 
 ```
-root@shawn-server:~# ./eipctl -h
-NAME:
-   eipctl - A new cli application
+root@shawn-server:~/workspace/kube-eip# kubectl get all -n kube-eip-system
+Warning: kubevirt.io/v1 VirtualMachineInstancePresets is now deprecated and will be removed in v2.
+NAME                                               READY   STATUS    RESTARTS   AGE
+pod/kube-eip-controller-manager-5df4d7d5fd-8qtr6   2/2     Running   0          2m11s
 
-USAGE:
-   eipctl [global options] command [command options] [arguments...]
+NAME                                                  TYPE        CLUSTER-IP        EXTERNAL-IP   PORT(S)    AGE
+service/kube-eip-controller-manager-metrics-service   ClusterIP   192.168.223.251   <none>        8443/TCP   2m11s
 
-COMMANDS:
-   help, h  Shows a list of commands or help for one command
+NAME                                          READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/kube-eip-controller-manager   1/1     1            1           2m11s
 
-GLOBAL OPTIONS:
-   --target value  rpc server address, default 127.0.0.1:6127 (default: "127.0.0.1:6127")
-   --eip-ip value  eip ip address
-   --vmi-ip value  vmi ip address
-   --action value  action, bind or unbind
-   --help, -h      show help
+NAME                                                     DESIRED   CURRENT   READY   AGE
+replicaset.apps/kube-eip-controller-manager-5df4d7d5fd   1         1         1       2m11s
+root@shawn-server:~/workspace/kube-eip# kubectl get all -n kube-eip-agent
+Warning: kubevirt.io/v1 VirtualMachineInstancePresets is now deprecated and will be removed in v2.
+NAME                  READY   STATUS    RESTARTS   AGE
+pod/eip-agent-2dkbb   1/1     Running   0          2m34s
+pod/eip-agent-klcpd   1/1     Running   0          2m34s
+
+NAME                       DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+daemonset.apps/eip-agent   2         2         2       2            2           <none>          2m34s
+root@shawn-server:~/workspace/kube-eip# kubectl get eipbinding
+NAME     AGE
+cirros   45s
 ```

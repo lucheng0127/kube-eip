@@ -1,9 +1,16 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kube-eip-agent
+
+---
+
 # TODO(user): change content of config map
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: eip-agent-cm
-  namespace: kube-eip-system
+  namespace: kube-eip-agent
 data:
   svc_net: 192.168.223.0/24
   pod_net: 10.244.0.0/16
@@ -18,7 +25,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: eip-agent
-  namespace: kube-eip-system
+  namespace: kube-eip-agent
 spec:
   selector:
     matchLabels:
