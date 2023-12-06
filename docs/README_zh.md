@@ -52,6 +52,27 @@ EipAgent daemonset形式运行在每个节点，暴露6127端口对外提供绑�
 根据实际情况修改eip-agent-cm configmap中的配置(conf/agent/eip_agent.yaml)
 
 ```
+# 部署eip agent之前根据实际环境修改配置 kube-eip/config/agent/eip_agent.yaml
+...
+
+# TODO(user): change content of config map
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eip-agent-cm
+  namespace: kube-eip-agent
+data:
+  svc_net: 192.168.223.0/24      # K8s service ip cidr
+  pod_net: 10.244.0.0/16         # K8s pod ip cidr
+  eip_net: 192.168.18.0/24       # The public network cidr
+  eip_gw_ip: 192.168.18.1        # The public network gateway
+  eip_gw_dev: enp2s0             # The interface on each hyper, that access public netwrok interface(If interface name not same, add a linux bridge with the same name(such as br-pub) and add interface to linux bridge)
+  log_level: debug
+
+...
+```
+
+```
 # 部署
 IMG=quay.io/shawnlu0127/eipbinding_operator:20231130 make deploy
 make deploy-agent
