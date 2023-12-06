@@ -30,6 +30,27 @@ The stable eipbinding operator and eip agent docker images
 *TODO(user): modify configmap eip-agent-cm (config/agent/eip_agent.yaml)*
 
 ```
+# Modify it before deploy eip_agent kube-eip/config/agent/eip_agent.yaml
+...
+
+# TODO(user): change content of config map
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eip-agent-cm
+  namespace: kube-eip-agent
+data:
+  svc_net: 192.168.223.0/24      # K8s service ip cidr
+  pod_net: 10.244.0.0/16         # K8s pod ip cidr
+  eip_net: 192.168.18.0/24       # The public network cidr
+  eip_gw_ip: 192.168.18.1        # The public network gateway
+  eip_gw_dev: enp2s0             # The interface on each hyper, that access public netwrok interface(If interface name not same, add a linux bridge with the same name(such as br-pub) and add interface to linux bridge)
+  log_level: debug
+
+...
+```
+
+```
 # Deploy
 IMG={your own image name and tag} make deploy
 make deploy-agent
