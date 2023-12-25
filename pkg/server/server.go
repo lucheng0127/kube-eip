@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/erikdubbelboer/gspt"
 	"github.com/lucheng0127/kube-eip/pkg/manager"
 	"github.com/lucheng0127/kube-eip/pkg/protoc/binding"
 	"github.com/lucheng0127/kube-eip/pkg/utils/ctx"
@@ -77,6 +78,10 @@ func NewAgent(opts ...AgentOption) *EipAgent {
 }
 
 func Launch(cCtx *cli.Context) error {
+	// Hide process arguments, since they may contain
+	// too many infos
+	gspt.SetProcTitle(os.Args[0] + " daemon")
+
 	// Init agent
 	gwIP := validator.ValidateIPv4(cCtx.String("gateway-ip"))
 	if gwIP == nil {

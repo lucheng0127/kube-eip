@@ -3,6 +3,7 @@ module github.com/lucheng0127/kube-eip
 go 1.20
 
 require (
+	github.com/erikdubbelboer/gspt v0.0.0-20210805194459-ce36a5128377
 	github.com/google/gopacket v1.1.19
 	github.com/onsi/ginkgo/v2 v2.11.0
 	github.com/onsi/gomega v1.27.10
