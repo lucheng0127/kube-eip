@@ -53,7 +53,7 @@ data:
 ```
 # Deploy
 IMG={your own image name and tag} make deploy
-make deploy-agent
+IMG={your own image name and tag} make deploy-agent
 
 # Undeploy
 make undeploy
@@ -73,7 +73,7 @@ IMG=quay.io/shawnlu0127/eip_agent:20231204 make docker-push
 
 # Deploy eipbinding operator and eip agent
 IMG=quay.io/shawnlu0127/eipbinding_operator:20231130 make deploy
-make deploy-agent
+IMG=quay.io/shawnlu0127/eip_agent:20231204 make deploy-agent
 
 # Undeploy
 make undeploy

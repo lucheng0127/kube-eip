@@ -134,8 +134,9 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
 
 .PHONY: deploy-agent
-deploy-agent:
-	$(KUBECTL) apply -f config/agent/eip_agent.yaml
+deploy-agent: kustomize
+	cd config/agent && $(KUSTOMIZE) edit set image agent=${IMG}
+	${KUSTOMIZE} build config/agent | $(KUBECTL) apply -f -
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
@@ -143,7 +144,7 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 
 .PHONY: undeploy-agent
 undeploy-agent:
-	$(KUBECTL) delete -f config/agent/eip_agent.yaml
+	$(KUSTOMIZE) build config/agent | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
 ##@ Build Dependencies
 

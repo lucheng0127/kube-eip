@@ -1,0 +1,8 @@
+resources:
+- eip_agent.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+images:
+- name: agent
+  newName: quay.io/shawnlu0127/eip_agent
+  newTag: "20231204"

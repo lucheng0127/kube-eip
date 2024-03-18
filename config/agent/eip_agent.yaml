@@ -51,7 +51,7 @@ spec:
         - name: eip-agent-cm
           mountPath: "/config"
           readOnly: true
-        image: quay.io/shawnlu0127/eip_agent:20231204
+        image: agent
         command: ["/entrypoint.sh"]
         env:
           - name: AGENT_SVC_NET
