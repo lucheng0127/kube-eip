@@ -63,13 +63,15 @@ make undeploy-agent
 **Build your own image, push and deploy**
 
 ```
-# Build eipbinding operator and eip agent
+# Build eipbinding operator, eip agent and eipctl
 IMG=quay.io/shawnlu0127/eipbinding_operator:20231130 make docker-build-operator
 IMG=quay.io/shawnlu0127/eip_agent:20231204 make docker-build-agent
+IMG=quay.io/shawnlu0127/eipctl:20240319 make docker-build-ctl
 
 # Push your image
 IMG=quay.io/shawnlu0127/eipbinding_operator:20231130 make docker-push
 IMG=quay.io/shawnlu0127/eip_agent:20231204 make docker-push
+IMG=quay.io/shawnlu0127/eipctl:20240319 make docker-push
 
 # Deploy eipbinding operator and eip agent
 IMG=quay.io/shawnlu0127/eipbinding_operator:20231130 make deploy

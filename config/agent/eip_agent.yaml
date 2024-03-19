@@ -12,10 +12,10 @@ metadata:
   name: eip-agent-cm
   namespace: kube-eip-agent
 data:
-  svc_net: 192.168.223.0/24
+  svc_net: 10.66.0.0/24
   pod_net: 10.244.0.0/16
-  eip_net: 192.168.18.0/24
-  eip_gw_ip: 192.168.18.1
+  eip_net: 192.168.137.0/24
+  eip_gw_ip: 192.168.137.254
   eip_gw_dev: enp2s0
   log_level: debug
 

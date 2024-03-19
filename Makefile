@@ -93,6 +93,14 @@ agent-buildfile:
 docker-build-agent: agent-buildfile
 	$(CONTAINER_TOOL) build -t ${IMG} .
 
+.PHONY: ctl-buildfile
+ctl-buildfile:
+	rm -rf Dockerfile && cp buildfile/eipctl/Dockerfile_eipctl ./Dockerfile
+
+.PHONY: docker-build-ctl
+docker-build-ctl: ctl-buildfile
+	$(CONTAINER_TOOL) build -t ${IMG} .
+
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	$(CONTAINER_TOOL) push ${IMG}
