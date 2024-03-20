@@ -4,6 +4,10 @@
 
 **Kube-eip** is an elastic ip management add-on for kubevirt. The aim is to provide an access to kubevirt vmi through elastic ip.
 
+**Attention**
+
+Kube-eip will only a project that support asign an elastic ip to k8s internal ip, and the EipBinding CRD operator that support access kubevirt vmi through eip will migrate to [virteip-operator](https://github.com/lucheng0127/virteip-operator)
+
 ## Architecture
 
 ![Architecture](./docs/architecture/architecture.png)
