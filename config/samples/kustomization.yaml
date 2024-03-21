@@ -1,4 +1,0 @@
-## Append samples of your project ##
-resources:
-- extension_v1_eipbinding.yaml
-#+kubebuilder:scaffold:manifestskustomizesamples

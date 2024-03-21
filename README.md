@@ -2,11 +2,11 @@
 
 [中文](./docs/README_zh.md)
 
-**Kube-eip** is an elastic ip management add-on for kubevirt. The aim is to provide an access to kubevirt vmi through elastic ip.
+**Kube-eip** is an add-on for k8s. The aim is to provide an access to k8s internal ip(such as pod ip or service ip) through elastic ip.
 
-**Attention**
+**Kubevirt eip support**
 
-Kube-eip will only a project that support asign an elastic ip to k8s internal ip, and the EipBinding CRD operator that support access kubevirt vmi through eip will migrate to [virteip-operator](https://github.com/lucheng0127/virteip-operator)
+For kubevirt vmi eip support, install the [virteip-operator](https://github.com/lucheng0127/virteip-operator)
 
 ## Architecture
 
@@ -16,20 +16,16 @@ At it's core, kube-eip use the rules of iptables implement the transform between
 
 Then for eip routes, we use bgp to declare that the nexthop to access vmi pod that binded eip. There ware a series bgp server we can choise, but we can use gobgp as the bgp library native.
 
-## Lifecycle of eip
-
-Kube-eip extends kubeernets by adding a eipBinding CRD. An eipBinding represent a eip binded to a vmi pod. And an eip can be create and bind or destoryed along with the eipBinding. Also operator will watch EipBinding and kubevirt VirtualMachineInstance, and handle create update and delete event.
-
 ## Modules
 
-There are two compose Operator and EipAgent. Operator watch the EipBinding and VirtualMachineInstance create, update and delete event. Then call EipAgent to build the rules on hyper, via grpc.
+EipAgent run as daemonset on every k8s hyper node. And the eipctl is a command line tools call EipAgent by gRPC to apply the eipbinding rules on hyper.
 
 ## Usage
 
-The stable eipbinding operator and eip agent docker images
+The stable docker images
 
-* quay.io/shawnlu0127/eipbinding_operator:20231130
 * quay.io/shawnlu0127/eip_agent:20231204
+* quay.io/shawnlu0127/eipctl:20240319 (Used by eipbinding job created by virteip-operator)
 
 *TODO(user): modify configmap eip-agent-cm (config/agent/eip_agent.yaml)*
 
@@ -56,11 +52,9 @@ data:
 
 ```
 # Deploy
-IMG={your own image name and tag} make deploy
 IMG={your own image name and tag} make deploy-agent
 
 # Undeploy
-make undeploy
 make undeploy-agent
 ```
 
@@ -68,21 +62,17 @@ make undeploy-agent
 
 ```
 # Build eipbinding operator, eip agent and eipctl
-IMG=quay.io/shawnlu0127/eipbinding_operator:20231130 make docker-build-operator
 IMG=quay.io/shawnlu0127/eip_agent:20231204 make docker-build-agent
 IMG=quay.io/shawnlu0127/eipctl:20240319 make docker-build-ctl
 
 # Push your image
-IMG=quay.io/shawnlu0127/eipbinding_operator:20231130 make docker-push
 IMG=quay.io/shawnlu0127/eip_agent:20231204 make docker-push
 IMG=quay.io/shawnlu0127/eipctl:20240319 make docker-push
 
 # Deploy eipbinding operator and eip agent
-IMG=quay.io/shawnlu0127/eipbinding_operator:20231130 make deploy
 IMG=quay.io/shawnlu0127/eip_agent:20231204 make deploy-agent
 
 # Undeploy
-make undeploy
 make undeploy-agent
 ```
 
