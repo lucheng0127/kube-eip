@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: agent
   newName: quay.io/shawnlu0127/eip_agent
-  newTag: "20231204"
+  newTag: "20240322"

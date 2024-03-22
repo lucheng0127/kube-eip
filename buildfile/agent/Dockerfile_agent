@@ -34,6 +34,10 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --no-cache libpcap-dev libbpf-dev libc6-compat ipset iptables
 RUN ln -s /usr/lib/libpcap.so.1 /usr/lib/libpcap.so.0.8
 
+# Use iptables-nft rather than iptables-legancy
+RUN rm /sbin/iptables
+RUN ln -s /sbin/xtables-nft-multi /sbin/iptables
+
 WORKDIR /
 COPY --from=builder /workspace/eip_agent .
 COPY --chmod=777 buildfile/agent/entrypoint.sh .

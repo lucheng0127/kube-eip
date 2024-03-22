@@ -24,10 +24,15 @@ EipAgent run as daemonset on every k8s hyper node. And the eipctl is a command l
 
 The stable docker images
 
-* quay.io/shawnlu0127/eip_agent:20231204
+* quay.io/shawnlu0127/eip_agent:20231204 (Use iptables-legacy)
+* quay.io/shawnlu0127/eip_agent:20240322 (Use iptables-nft)
 * quay.io/shawnlu0127/eipctl:20240319 (Used by eipbinding job created by virteip-operator)
 
-**Attention: for eip_agent:20231204 iptables link to iptables-legacy by default**
+**Attention:**
+
+Check your hyper node iptables version by iptables -V.
+* iptables-legacy: eip_agent:20231204
+* iptables-nft: eip_agent:20240322
 
 *TODO(user): modify configmap eip-agent-cm (config/agent/eip_agent.yaml)*
 
