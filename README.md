@@ -27,6 +27,8 @@ The stable docker images
 * quay.io/shawnlu0127/eip_agent:20231204
 * quay.io/shawnlu0127/eipctl:20240319 (Used by eipbinding job created by virteip-operator)
 
+**Attention: for eip_agent:20231204 iptables link to iptables-legacy by default**
+
 *TODO(user): modify configmap eip-agent-cm (config/agent/eip_agent.yaml)*
 
 ```
