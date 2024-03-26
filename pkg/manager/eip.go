@@ -174,7 +174,7 @@ func (mgr *EipMgr) deleteBgpRoute() error {
 func (mgr *EipMgr) BindEip() (int, error) {
 	// Parse metadata
 	ctx := ectx.NewTraceContext()
-	md, err := metadata.ParseMD(mgr.ExternalIP.String(), mgr.InternalIP.String())
+	md, err := metadata.GetMD(mgr.ExternalIP.String(), mgr.InternalIP.String())
 	if err != nil {
 		logger.Error(ctx, err.Error())
 		return 0, err
@@ -258,7 +258,7 @@ func (mgr *EipMgr) BindEip() (int, error) {
 
 func (mgr *EipMgr) UnbindEip() (int, error) {
 	ctx := ectx.NewTraceContext()
-	md, err := metadata.ParseMD(mgr.ExternalIP.String(), mgr.InternalIP.String())
+	md, err := metadata.GetMD(mgr.ExternalIP.String(), mgr.InternalIP.String())
 	if err != nil {
 		logger.Error(ctx, fmt.Sprintf("parse metadata file %s", err.Error()))
 		return 0, err

@@ -59,9 +59,13 @@ func (m *EipMetadata) DeleteMD() error {
 	return nil
 }
 
-func ParseMD(eip, iip string) (*EipMetadata, error) {
-	md := new(EipMetadata)
+func GetMD(eip, iip string) (*EipMetadata, error) {
 	filepath := formatMDPath(eip, iip)
+	return ParseMD(filepath)
+}
+
+func ParseMD(filepath string) (*EipMetadata, error) {
+	md := new(EipMetadata)
 
 	if _, err := os.Stat(filepath); errors.Is(err, os.ErrNotExist) {
 		// If metadata file not exist, do not return error

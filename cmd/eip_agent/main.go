@@ -52,6 +52,11 @@ func main() {
 				Value: false,
 				Usage: "whether use arp poisoning to make a arp reply for eip, default is false, when enable will not add eip to external network gateway device",
 			},
+			&cli.Int64Flag{
+				Name:  "webport",
+				Value: 8201,
+				Usage: "web server port",
+			},
 		},
 	}
 
