@@ -1,4 +1,4 @@
-package manager
+package metadata
 
 import (
 	"encoding/json"
@@ -30,7 +30,7 @@ func (m *EipMetadata) getMDFilepath() string {
 	return formatMDPath(m.ExternalIP, m.InternalIP)
 }
 
-func (m *EipMetadata) dumpMD() error {
+func (m *EipMetadata) DumpMD() error {
 	if _, err := os.Stat(MDDir); errors.Is(err, os.ErrNotExist) {
 		if err := os.Mkdir(MDDir, os.ModePerm); err != nil {
 			return err
@@ -50,7 +50,7 @@ func (m *EipMetadata) dumpMD() error {
 	return nil
 }
 
-func (m *EipMetadata) deleteMD() error {
+func (m *EipMetadata) DeleteMD() error {
 	err := os.Remove(m.getMDFilepath())
 	if err != nil && !errhandle.IsNoSuchFileError(err) {
 		return err
@@ -59,7 +59,7 @@ func (m *EipMetadata) deleteMD() error {
 	return nil
 }
 
-func parseMD(eip, iip string) (*EipMetadata, error) {
+func ParseMD(eip, iip string) (*EipMetadata, error) {
 	md := new(EipMetadata)
 	filepath := formatMDPath(eip, iip)
 

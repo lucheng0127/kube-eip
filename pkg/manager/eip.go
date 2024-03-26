@@ -8,6 +8,7 @@ import (
 	ectx "github.com/lucheng0127/kube-eip/pkg/utils/ctx"
 	"github.com/lucheng0127/kube-eip/pkg/utils/errhandle"
 	logger "github.com/lucheng0127/kube-eip/pkg/utils/log"
+	"github.com/lucheng0127/kube-eip/pkg/utils/metadata"
 )
 
 type EipManager interface {
@@ -173,7 +174,7 @@ func (mgr *EipMgr) deleteBgpRoute() error {
 func (mgr *EipMgr) BindEip() (int, error) {
 	// Parse metadata
 	ctx := ectx.NewTraceContext()
-	md, err := parseMD(mgr.ExternalIP.String(), mgr.InternalIP.String())
+	md, err := metadata.ParseMD(mgr.ExternalIP.String(), mgr.InternalIP.String())
 	if err != nil {
 		logger.Error(ctx, err.Error())
 		return 0, err
@@ -194,19 +195,19 @@ func (mgr *EipMgr) BindEip() (int, error) {
 		//}
 
 		// Init metadata
-		md = new(EipMetadata)
+		md = new(metadata.EipMetadata)
 		md.Phase = 0
-		md.Status = MD_STATUS_FAILED
+		md.Status = metadata.MD_STATUS_FAILED
 		md.ExternalIP = mgr.ExternalIP.String()
 		md.InternalIP = mgr.InternalIP.String()
 	}
 
-	if md.Status == MD_STATUS_FINISHED {
+	if md.Status == metadata.MD_STATUS_FINISHED {
 		logger.Debug(ctx, fmt.Sprintf("eip %s alrady applyed, do nothing", mgr.ExternalIP.String()))
 		return 0, nil
 	}
 
-	defer md.dumpMD()
+	defer md.DumpMD()
 
 	// Do binding phase
 	for i := md.Phase; i < 5; i++ {
@@ -250,14 +251,14 @@ func (mgr *EipMgr) BindEip() (int, error) {
 	}
 
 	md.Phase = 5
-	md.Status = MD_STATUS_FINISHED
+	md.Status = metadata.MD_STATUS_FINISHED
 
 	return 0, nil
 }
 
 func (mgr *EipMgr) UnbindEip() (int, error) {
 	ctx := ectx.NewTraceContext()
-	md, err := parseMD(mgr.ExternalIP.String(), mgr.InternalIP.String())
+	md, err := metadata.ParseMD(mgr.ExternalIP.String(), mgr.InternalIP.String())
 	if err != nil {
 		logger.Error(ctx, fmt.Sprintf("parse metadata file %s", err.Error()))
 		return 0, err
@@ -304,7 +305,7 @@ func (mgr *EipMgr) UnbindEip() (int, error) {
 	}
 
 	// Delete metadata file when clean up finished
-	if err := md.deleteMD(); err != nil {
+	if err := md.DeleteMD(); err != nil {
 		logger.Error(ctx, fmt.Sprintf("delete eip %s metadata file failed", mgr.ExternalIP.String()))
 		return 6, err
 	}
