@@ -7,14 +7,14 @@ import (
 )
 
 type ListFilter struct {
-	eip    string
-	iip    string
-	status string
+	EIp    string `form:"exip"`
+	IIp    string `form:"inip"`
+	Status string `form:"status"`
 }
 
 func ListEB(c *gin.Context) {
 	filter := new(ListFilter)
-	err := c.ShouldBind(filter)
+	err := c.ShouldBindQuery(filter)
 	if err != nil {
 		response.Failed(c, err.Error())
 		return
@@ -26,8 +26,37 @@ func ListEB(c *gin.Context) {
 		return
 	}
 
-	// TODO(shawnlu): Add filter
+	var data []*metadata.EipMetadata
+	if filter == nil {
+		data = mds
+	} else {
+		for _, md := range mds {
+			if filter.EIp != "" {
+				if md.ExternalIP != filter.EIp {
+					continue
+				}
+			}
 
-	response.Success(c, mds)
+			if filter.IIp != "" {
+				if md.InternalIP != filter.IIp {
+					continue
+				}
+			}
+
+			if filter.Status == "succeed" {
+				if md.Status != metadata.MD_STATUS_FINISHED {
+					continue
+				}
+			} else if filter.Status == "failed" {
+				if md.Status != metadata.MD_STATUS_FAILED {
+					continue
+				}
+			}
+
+			data = append(data, md)
+		}
+	}
+
+	response.Success(c, data)
 	return
 }
