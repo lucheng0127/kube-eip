@@ -57,6 +57,11 @@ func main() {
 				Value: 8201,
 				Usage: "web server port",
 			},
+			&cli.StringFlag{
+				Name:  "secret",
+				Value: "none",
+				Usage: "the administrator secret of agent, use to totp auth for http server",
+			},
 		},
 	}
 

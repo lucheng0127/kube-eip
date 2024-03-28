@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option go_package = "github.com/lucheng0127/kube-eip/pkg/protoc/admin";
+
+package protoc;
+
+message TotpSecReq {}
+
+message TotpSecRsp {
+    string secret = 1;
+    int32 digits = 2;
+    int32 period = 3;
+}
+
+service Admin {
+    rpc TotpSec (TotpSecReq) returns (TotpSecRsp);
+}
