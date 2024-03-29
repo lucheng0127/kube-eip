@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/lucheng0127/kube-eip/pkg/manager"
-	"github.com/lucheng0127/kube-eip/pkg/protoc/admin"
 	"github.com/lucheng0127/kube-eip/pkg/protoc/binding"
 	ectx "github.com/lucheng0127/kube-eip/pkg/utils/ctx"
 	logger "github.com/lucheng0127/kube-eip/pkg/utils/log"
@@ -19,18 +18,18 @@ const (
 
 type GrpcServer struct {
 	binding.UnimplementedEipAgentServer
-	admin.UnimplementedAdminServer
+	//admin.UnimplementedAdminServer
 
-	Secret string
+	//Secret string
 }
 
-func (s *GrpcServer) TotpSec(ctx context.Context, req *admin.TotpSecReq) (*admin.TotpSecRsp, error) {
-	rsp := new(admin.TotpSecRsp)
-	rsp.Secret = s.Secret
-	rsp.Digits = 6
-	rsp.Period = 30
-	return rsp, nil
-}
+//func (s *GrpcServer) TotpSec(ctx context.Context, req *admin.TotpSecReq) (*admin.TotpSecRsp, error) {
+//	rsp := new(admin.TotpSecRsp)
+//	//rsp.Secret = s.Secret
+//	rsp.Digits = 6
+//	rsp.Period = 30
+//	return rsp, nil
+//}
 
 func (s *GrpcServer) EipOperate(ctx context.Context, req *binding.EipOpReq) (*binding.EipOpRsp, error) {
 	rsp := new(binding.EipOpRsp)

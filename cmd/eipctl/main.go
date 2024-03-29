@@ -53,17 +53,17 @@ func main() {
 					},
 				},
 			},
-			{
-				Name:   "totp",
-				Action: client.TotpQRCode,
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "target",
-						Value: "127.0.0.1:6127",
-						Usage: "rpc server address, default 127.0.0.1:6127",
-					},
-				},
-			},
+			//{
+			//	Name:   "totp",
+			//	Action: client.TotpQRCode,
+			//	Flags: []cli.Flag{
+			//		&cli.StringFlag{
+			//			Name:  "target",
+			//			Value: "127.0.0.1:6127",
+			//			Usage: "rpc server address, default 127.0.0.1:6127",
+			//		},
+			//	},
+			//},
 		},
 	}
 

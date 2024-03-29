@@ -13,9 +13,3 @@ func setInternalAddrs(addrs []string) AgentOption {
 		mgr.InternalAddrs = addrs
 	}
 }
-
-func setSecret(sec string) AgentOption {
-	return func(mgr *EipAgent) {
-		mgr.Secret = sec
-	}
-}
