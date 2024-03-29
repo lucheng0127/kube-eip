@@ -18,18 +18,7 @@ const (
 
 type GrpcServer struct {
 	binding.UnimplementedEipAgentServer
-	//admin.UnimplementedAdminServer
-
-	//Secret string
 }
-
-//func (s *GrpcServer) TotpSec(ctx context.Context, req *admin.TotpSecReq) (*admin.TotpSecRsp, error) {
-//	rsp := new(admin.TotpSecRsp)
-//	//rsp.Secret = s.Secret
-//	rsp.Digits = 6
-//	rsp.Period = 30
-//	return rsp, nil
-//}
 
 func (s *GrpcServer) EipOperate(ctx context.Context, req *binding.EipOpReq) (*binding.EipOpRsp, error) {
 	rsp := new(binding.EipOpRsp)

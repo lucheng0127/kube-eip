@@ -76,29 +76,3 @@ func Unbind(cCtx *cli.Context) error {
 		eipAddr, vmiAddr, rsp)
 	return nil
 }
-
-//func TotpQRCode(cCtx *cli.Context) error {
-//	conn, err := grpc.Dial(cCtx.String("target"), grpc.WithTransportCredentials(insecure.NewCredentials()))
-//	if err != nil {
-//		return err
-//	}
-//
-//	client := admin.NewAdminClient(conn)
-//	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-//	defer cancel()
-//
-//	rsp, err := client.TotpSec(ctx, &admin.TotpSecReq{})
-//	if err != nil {
-//		return err
-//	}
-//
-//	qrInfo := fmt.Sprintf("otpauth://totp/kube-eip:admin?secret=%s&issuer=kube-eip&algorithm=SHA1&digits=%d&period=%d", rsp.Secret, rsp.Digits, rsp.Period)
-//	qrCode, err := qrcode.New(qrInfo, qrcode.Low)
-//	if err != nil {
-//		return err
-//	}
-//
-//	asciiQr := qrCode.ToSmallString(false)
-//	fmt.Println(asciiQr)
-//	return nil
-//}

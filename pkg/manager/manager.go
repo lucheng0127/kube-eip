@@ -9,7 +9,7 @@ import (
 	logger "github.com/lucheng0127/kube-eip/pkg/utils/log"
 )
 
-func RegisterManagers(gwIP net.IP, gwDev, bgpType, eipCidr string, arpPoisoning bool, internal_net ...string) error {
+func RegisterManagers(gwIP net.IP, gwDev, bgpType, eipCidr string, internal_net ...string) error {
 	ctx := ctx.NewTraceContext()
 
 	// Registry ipset mgr
@@ -70,16 +70,6 @@ func RegisterManagers(gwIP net.IP, gwDev, bgpType, eipCidr string, arpPoisoning 
 	}
 
 	logger.Info(ctx, "register bgp manager finished")
-
-	if arpPoisoning {
-		// Registry and do poisoning
-		if err := RegisterAndRunArpManager(gwDev); err != nil {
-			logger.Error(ctx, fmt.Sprintf("register arp mgr: %s", err.Error()))
-			return err
-		}
-
-		logger.Info(ctx, "register arp manager finished")
-	}
 
 	return nil
 }

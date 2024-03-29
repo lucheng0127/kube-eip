@@ -81,8 +81,7 @@ func NewAgent(opts ...AgentOption) *EipAgent {
 }
 
 func Launch(cCtx *cli.Context) error {
-	// Hide process arguments, since they may contain
-	// too many infos
+	// Hide process arguments, since they may contain too many infos
 	gspt.SetProcTitle(os.Args[0] + " daemon")
 
 	// Init agent
@@ -93,7 +92,6 @@ func Launch(cCtx *cli.Context) error {
 	gwDev := cCtx.String("gateway-dev")
 	bgpType := cCtx.String("bgp-type")
 	eipCidr := cCtx.String("eip-cidr")
-	arpPoisoning := cCtx.Bool("arp-poisoning")
 
 	setLogger(cCtx.String("log-level"))
 	agent := NewAgent(
@@ -102,7 +100,7 @@ func Launch(cCtx *cli.Context) error {
 	)
 
 	// Setup manager
-	if err := manager.RegisterManagers(gwIP, gwDev, bgpType, eipCidr, arpPoisoning, agent.InternalAddrs...); err != nil {
+	if err := manager.RegisterManagers(gwIP, gwDev, bgpType, eipCidr, agent.InternalAddrs...); err != nil {
 		return err
 	}
 

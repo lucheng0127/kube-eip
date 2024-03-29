@@ -151,26 +151,6 @@ func (mgr *EipMgr) deleteBgpRoute() error {
 	return nil
 }
 
-//func (mgr *EipMgr) checkEipConflict() (bool, error) {
-//	cmdMgr, err := cmd.NewCmdMgr("ls")
-//	if err != nil {
-//		return false, err
-//	}
-//
-//	subcmd := strings.Split(MDDir, " ")
-//	out, err := cmdMgr.Execute(subcmd...)
-//
-//	if err != nil {
-//		return false, err
-//	}
-//
-//	if strings.Contains(out, mgr.ExternalIP.String()) {
-//		return true, nil
-//	}
-//
-//	return false, nil
-//}
-
 func (mgr *EipMgr) BindEip() (int, error) {
 	// Parse metadata
 	ctx := ectx.NewTraceContext()
@@ -181,19 +161,6 @@ func (mgr *EipMgr) BindEip() (int, error) {
 	}
 
 	if md == nil {
-		// TODO(shawnlu) Check eip conflict
-		// migrate vmi, will tigger unbind after bind succeed, and will delete eip from ipset, need fix it
-		//eipInUsed, err := mgr.checkEipConflict()
-		//if err != nil {
-		//	logger.Error(ctx, fmt.Sprintf("check eip conflict %s", err.Error()))
-		//	return 0, err
-		//}
-
-		//if eipInUsed {
-		//	logger.Warn(ctx, fmt.Sprintf("eip %s already in used", mgr.ExternalIP.String()))
-		//	return 0, nil
-		//}
-
 		// Init metadata
 		md = new(metadata.EipMetadata)
 		md.Phase = 0
@@ -232,14 +199,9 @@ func (mgr *EipMgr) BindEip() (int, error) {
 			}
 		case 4:
 			// Add eip to interface
-			// If use arp snooping, no need do this
-			if mgr.ArpMgr == nil {
-				if err := mgr.addEipToIface(ctx); err != nil {
-					md.Phase = 3
-					return 4, err
-				}
-			} else {
-				mgr.ArpMgr.AddTarget(mgr.ExternalIP.String())
+			if err := mgr.addEipToIface(ctx); err != nil {
+				md.Phase = 3
+				return 4, err
 			}
 		case 5:
 			// Add bgp route
@@ -288,13 +250,9 @@ func (mgr *EipMgr) UnbindEip() (int, error) {
 				return 3, err
 			}
 		case 4:
-			if mgr.ArpMgr == nil {
-				// Remove eip from interface
-				if err := mgr.remoteEipFromIface(ctx); err != nil {
-					return 4, err
-				}
-			} else {
-				mgr.ArpMgr.DeleteTarget(mgr.ExternalIP.String())
+			// Remove eip from interface
+			if err := mgr.remoteEipFromIface(ctx); err != nil {
+				return 4, err
 			}
 		case 5:
 			// Delete bgp route
