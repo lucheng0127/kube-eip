@@ -117,6 +117,7 @@ func Launch(cCtx *cli.Context) error {
 	go handleSignal(sigChan, agent)
 
 	// Run web server
+	// TODO(shawnlu): Strip web server
 	wport := validator.ValidatePort(cCtx.Int("webport"))
 	if wport != 0 {
 		go webserver.Serve(wport)
