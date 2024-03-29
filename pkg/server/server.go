@@ -9,9 +9,7 @@ import (
 	"os/signal"
 
 	"github.com/erikdubbelboer/gspt"
-	webserver "github.com/lucheng0127/kube-eip/internal/server"
 	"github.com/lucheng0127/kube-eip/pkg/manager"
-	"github.com/lucheng0127/kube-eip/pkg/protoc/admin"
 	"github.com/lucheng0127/kube-eip/pkg/protoc/binding"
 	"github.com/lucheng0127/kube-eip/pkg/utils/ctx"
 	logger "github.com/lucheng0127/kube-eip/pkg/utils/log"
@@ -26,7 +24,6 @@ type EipAgent struct {
 	RpcSvc        binding.EipAgentServer
 	Ctx           context.Context
 	InternalAddrs []string
-	Secret        string
 }
 
 func setLogger(level string) {
@@ -56,10 +53,9 @@ func (agent *EipAgent) Serve() error {
 
 	gSvc := grpc.NewServer()
 	rpcSvc := new(GrpcServer)
-	rpcSvc.Secret = agent.Secret
 
 	binding.RegisterEipAgentServer(gSvc, rpcSvc)
-	admin.RegisterAdminServer(gSvc, rpcSvc)
+	//admin.RegisterAdminServer(gSvc, rpcSvc)
 
 	logger.Info(agent.Ctx, fmt.Sprintf("rpc server run on port %d", agent.Port))
 	gSvc.Serve(lis)
@@ -103,7 +99,6 @@ func Launch(cCtx *cli.Context) error {
 	agent := NewAgent(
 		setListenPort(cCtx.Int("port")),
 		setInternalAddrs(cCtx.StringSlice("internal-net")),
-		setSecret(cCtx.String("secret")),
 	)
 
 	// Setup manager
@@ -115,13 +110,6 @@ func Launch(cCtx *cli.Context) error {
 	sigChan := make(chan os.Signal, 1024)
 	signal.Notify(sigChan, handledSignals...)
 	go handleSignal(sigChan, agent)
-
-	// Run web server
-	// TODO(shawnlu): Strip web server
-	wport := validator.ValidatePort(cCtx.Int("webport"))
-	if wport != 0 {
-		go webserver.Serve(wport)
-	}
 
 	// Serve
 	return agent.Serve()
