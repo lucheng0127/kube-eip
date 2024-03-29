@@ -144,10 +144,18 @@ func (mgr *EipMgr) remoteEipFromIface(ctx context.Context) error {
 }
 
 func (mgr *EipMgr) addBgpRoute() error {
+	if mgr.BgpMgr == nil {
+		return nil
+	}
+
 	return nil
 }
 
 func (mgr *EipMgr) deleteBgpRoute() error {
+	if mgr.BgpMgr == nil {
+		return nil
+	}
+
 	return nil
 }
 

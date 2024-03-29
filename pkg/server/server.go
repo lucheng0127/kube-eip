@@ -90,8 +90,8 @@ func Launch(cCtx *cli.Context) error {
 		return errors.New("invalidate gateway ip address")
 	}
 	gwDev := cCtx.String("gateway-dev")
-	bgpType := cCtx.String("bgp-type")
 	eipCidr := cCtx.String("eip-cidr")
+	bgpEnable := cCtx.Bool("bgp-enable")
 
 	setLogger(cCtx.String("log-level"))
 	agent := NewAgent(
@@ -100,7 +100,7 @@ func Launch(cCtx *cli.Context) error {
 	)
 
 	// Setup manager
-	if err := manager.RegisterManagers(gwIP, gwDev, bgpType, eipCidr, agent.InternalAddrs...); err != nil {
+	if err := manager.RegisterManagers(gwIP, gwDev, eipCidr, bgpEnable, agent.InternalAddrs...); err != nil {
 		return err
 	}
 

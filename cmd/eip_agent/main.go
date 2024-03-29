@@ -37,10 +37,10 @@ func main() {
 				Usage:    "externel network gateway device",
 				Required: true,
 			},
-			&cli.StringFlag{
-				Name:  "bgp-type",
-				Value: "none",
-				Usage: "bgp manager type, default is none, gobgp is avaliable",
+			&cli.BoolFlag{
+				Name:  "bgp-enable",
+				Value: false,
+				Usage: "send eip ipv4 route via bgp with gobgp speaker",
 			},
 			&cli.StringFlag{
 				Name:     "eip-cidr",

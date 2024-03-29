@@ -9,7 +9,7 @@ import (
 	logger "github.com/lucheng0127/kube-eip/pkg/utils/log"
 )
 
-func RegisterManagers(gwIP net.IP, gwDev, bgpType, eipCidr string, internal_net ...string) error {
+func RegisterManagers(gwIP net.IP, gwDev, eipCidr string, bgpEnable bool, internal_net ...string) error {
 	ctx := ctx.NewTraceContext()
 
 	// Registry ipset mgr
@@ -64,12 +64,16 @@ func RegisterManagers(gwIP net.IP, gwDev, bgpType, eipCidr string, internal_net 
 	logger.Info(ctx, "register nat manager finished")
 
 	// Registry bgp mgr
-	if err := RegisterBgpManager(bgpType); err != nil {
-		logger.Error(ctx, fmt.Sprintf("registry bgp mgr: %s", err.Error()))
-		return err
-	}
+	if bgpEnable {
+		if err := RegisterBgpManager(); err != nil {
+			logger.Error(ctx, fmt.Sprintf("registry bgp mgr: %s", err.Error()))
+			return err
+		}
 
-	logger.Info(ctx, "register bgp manager finished")
+		logger.Info(ctx, "register bgp manager finished")
+	} else {
+		logger.Info(ctx, "bgp not enable")
+	}
 
 	return nil
 }
